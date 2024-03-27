@@ -35,7 +35,6 @@
   </ItemGroup>
 
   <ItemGroup>
-	<None Update="Licenses\LICENSE.txt" Pack="true" PackagePath="" />
 	<None Update="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
