@@ -10,19 +10,20 @@
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	<Title>CodedThought.Core.Data.MySql</Title>
 	<Authors>Erik Bartlow</Authors>
-	<Company>Erik Bartlow</Company>
+	<Company>CodedThought</Company>
 	<Description>The CodedThought.Core.Data.MySql package is a custom database provider for use with MySql Server.</Description>
 	<PackageProjectUrl>https://github.com/erikbartlow/CodedThought.Core</PackageProjectUrl>
 	<RepositoryType>git</RepositoryType>
 	<RepositoryUrl>https://github.com/erikbartlow/CodedThought.Core</RepositoryUrl>
 	<IncludeContentInPack>true</IncludeContentInPack>
 	<PublishRepositoryUrl>true</PublishRepositoryUrl>
-	<PackageLicenseFile>Licenses/LICENSE.txt</PackageLicenseFile>
+	<PackageLicenseFile>LICENSE</PackageLicenseFile>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	<IncludeReferencedProjects>true</IncludeReferencedProjects>
 	<AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
 	<PublishRepositoryUrl>true</PublishRepositoryUrl>
+	<Copyright>Copyright (c) 2024, Erik Bartlow, All Rights Reserved</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,10 +32,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CodedThought.Core\CodedThought.Core.csproj" />
+    <ProjectReference Include="..\CodedThought.Core\CodedThought.Core\CodedThought.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+	<None Update="LICENSE" Pack="true" PackagePath="" />
 	<None Update="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
