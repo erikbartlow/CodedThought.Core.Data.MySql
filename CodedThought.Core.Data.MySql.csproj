@@ -4,9 +4,9 @@
 	<TargetFramework>net8.0</TargetFramework>
 	<ImplicitUsings>enable</ImplicitUsings>
 	<Nullable>enable</Nullable>
-	<AssemblyVersion>1.0.0.3</AssemblyVersion>
-	<FileVersion>1.0.0.3</FileVersion>
-	<VersionPrefix>1.0.0-alpha-3</VersionPrefix>
+	<AssemblyVersion>1.0.0.4</AssemblyVersion>
+	<FileVersion>1.0.0.4</FileVersion>
+	<VersionPrefix>1.0.0-alpha-4</VersionPrefix>
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	<Title>CodedThought.Core.Data.MySql</Title>
 	<Authors>Erik Bartlow</Authors>

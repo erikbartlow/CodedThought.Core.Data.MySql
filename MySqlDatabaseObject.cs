@@ -51,6 +51,11 @@ namespace CodedThought.Core.Data.MySql
         #endregion Transaction and Connection Methods
 
         #region Other Override Methods
+        /// <summary>
+        /// Returns the active connection. If the stack has a connection then it is returned.
+        /// connection is created.
+        /// </summary>
+        public override IDbConnection Connection => _connection == null ? (MySqlConnection) base.Connection : (MySqlConnection) _connection;
 
         /// <summary>
         /// Tests the connection to the database.
