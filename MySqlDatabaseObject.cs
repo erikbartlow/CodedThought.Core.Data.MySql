@@ -1,8 +1,11 @@
+using System.Data;
+using System.Data.Common;
+using System.Text;
+
 using CodedThought.Core.Data.Interfaces;
 using CodedThought.Core.Exceptions;
-using System.Data;
+
 using MySqlConnector;
-using System.Text;
 
 namespace CodedThought.Core.Data.MySql
 {
@@ -18,7 +21,7 @@ namespace CodedThought.Core.Data.MySql
 
         #region Constructor
 
-        public MySqlDatabaseObject() : base() { }
+        public MySqlDatabaseObject() : base() { _connection = new(); }
 
         #endregion Constructor
 
@@ -29,6 +32,11 @@ namespace CodedThought.Core.Data.MySql
         /// </summary>
         public override void Commit() => ExecuteNonQuery("COMMIT", CommandType.Text);
 
+        /// <summary>
+        /// Returns the active connection. If the stack has a connection then it is returned.
+        /// connection is created.
+        /// </summary>
+        public override IDbConnection Connection => _connection == null ? (MySqlConnection) base.Connection : (MySqlConnection) _connection;
 
         /// <summary>
         /// Opens an Oracle Connection
@@ -51,11 +59,6 @@ namespace CodedThought.Core.Data.MySql
         #endregion Transaction and Connection Methods
 
         #region Other Override Methods
-        /// <summary>
-        /// Returns the active connection. If the stack has a connection then it is returned.
-        /// connection is created.
-        /// </summary>
-        public override IDbConnection Connection => _connection == null ? (MySqlConnection) base.Connection : (MySqlConnection) _connection;
 
         /// <summary>
         /// Tests the connection to the database.
@@ -143,7 +146,7 @@ namespace CodedThought.Core.Data.MySql
         /// <returns></returns>
         public override IDataParameter CreateBooleanParameter(string srcTableColumnName, bool parameterValue)
         {
-            IDataParameter returnValue = null;
+            IDataParameter returnValue = CreateEmptyParameter();
 
             returnValue = CreateDbServerParam(srcTableColumnName, MySqlDbType.Bool);
             returnValue.Value = parameterValue;
@@ -422,9 +425,9 @@ namespace CodedThought.Core.Data.MySql
         {
             try
             {
-                ParameterCollection parameters = new ParameterCollection();
-                StringBuilder sbColumns = new StringBuilder();
-                StringBuilder sbValues = new StringBuilder();
+                ParameterCollection parameters = [];
+                StringBuilder sbColumns = new();
+                StringBuilder sbValues = new();
 
                 for (int i = 0; i < columns.Count; i++)
                 {
@@ -440,7 +443,7 @@ namespace CodedThought.Core.Data.MySql
                     }
                 }
 
-                StringBuilder sql = new StringBuilder("INSERT INTO " + tableName + " (");
+                StringBuilder sql = new("INSERT INTO " + tableName + " (");
                 sql.Append(sbColumns.Remove(0, 2));
                 sql.Append(") VALUES (");
                 sql.Append(sbValues.Remove(0, 2));
@@ -503,7 +506,6 @@ namespace CodedThought.Core.Data.MySql
             IDataReader reader = null;
             try
             {
-                //BeginTransaction();
                 StringBuilder sql = new("SELECT ");
                 sql.Append(GenerateColumnList(selectColumns));
                 sql.Append($" FROM {GetTableName(schemaName, tableName)}");
@@ -514,7 +516,6 @@ namespace CodedThought.Core.Data.MySql
 
                 sql.Append(GenerateOrderByClause(orderByColumns));
                 reader = ExecuteReader(sql.ToString(), parameters);
-                //CommitTransaction();
             }
             catch (Exception ex)
             {
@@ -532,76 +533,76 @@ namespace CodedThought.Core.Data.MySql
         #region Executing Queries
 
 
-        public override DataSet GetDataSet(string tableName, string schemaName, List<string> selectColumns, ParameterCollection parameters)
-        {
-            DataSet dataSet;
-            DefaultSchemaName = schemaName;
-            try
-            {
+        //public override DataSet GetDataSet(string tableName, string schemaName, List<string> selectColumns, ParameterCollection parameters)
+        //{
+        //    DataSet dataSet;
+        //    DefaultSchemaName = schemaName;
+        //    try
+        //    {
 
-                StringBuilder sql = new("SELECT ");
-                sql.Append(GenerateColumnList(selectColumns));
-                if (DefaultSchemaName != string.Empty)
-                {
-                    sql.AppendFormat(" FROM {0}.{1}", DefaultSchemaName, tableName);
-                }
-                else
-                {
-                    sql.AppendFormat(" FROM {0}", tableName);
-                }
+        //        StringBuilder sql = new("SELECT ");
+        //        sql.Append(GenerateColumnList(selectColumns));
+        //        if (DefaultSchemaName != string.Empty)
+        //        {
+        //            sql.AppendFormat(" FROM {0}.{1}", DefaultSchemaName, tableName);
+        //        }
+        //        else
+        //        {
+        //            sql.AppendFormat(" FROM {0}", tableName);
+        //        }
 
-                if (parameters != null && parameters.Count > 0)
-                {
-                    sql.Append(" WHERE " + GenerateWhereClauseFromParams(parameters));
-                }
+        //        if (parameters != null && parameters.Count > 0)
+        //        {
+        //            sql.Append(" WHERE " + GenerateWhereClauseFromParams(parameters));
+        //        }
 
-                dataSet = ExecuteDataSet(sql.ToString(), parameters);
-            }
-            catch (Exception ex)
-            {
-                throw new Exceptions.CodedThoughtApplicationException("Failed to retrieve data from: " + tableName, ex);
-            }
+        //        dataSet = ExecuteDataSet(sql.ToString(), parameters);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw new Exceptions.CodedThoughtApplicationException("Failed to retrieve data from: " + tableName, ex);
+        //    }
 
-            return dataSet;
-        }
+        //    return dataSet;
+        //}
 
         /// <summary>Executes a command in the database which returns data as a DataSet</summary>
         /// <param name="commandText"></param>
         /// <param name="type">       </param>
         /// <param name="parameters"> </param>
         /// <returns></returns>
-        public override DataSet ExecuteDataSet(string commandText, CommandType type, ParameterCollection parameters)
-        {
-            try
-            {
-                if (parameters != null)
-                {
-                    if (type == CommandType.Text && parameters.Count > 0 && !commandText.ToUpper().Contains("WHERE"))
-                    {
-                        commandText += $" WHERE {GenerateWhereClauseFromParams(parameters)}";
-                    }
-                }
-                BeginTransaction();
-                IDbCommand cmd = Connection.CreateCommand();
-                cmd.CommandText = commandText;
-                cmd.CommandType = type;
-                cmd.CommandTimeout = CommandTimeout > -1 ? CommandTimeout : Connection.ConnectionTimeout;
-                AddParametersToCommand(parameters, cmd);
+        //public override DataSet ExecuteDataSet(string commandText, CommandType type, ParameterCollection parameters)
+        //{
+        //    try
+        //    {
+        //        if (parameters != null)
+        //        {
+        //            if (type == CommandType.Text && parameters.Count > 0 && !commandText.ToUpper().Contains("WHERE"))
+        //            {
+        //                commandText += $" WHERE {GenerateWhereClauseFromParams(parameters)}";
+        //            }
+        //        }
+        //        BeginTransaction();
+        //        IDbCommand cmd = Connection.CreateCommand();
+        //        cmd.CommandText = commandText;
+        //        cmd.CommandType = type;
+        //        cmd.CommandTimeout = CommandTimeout > -1 ? CommandTimeout : Connection.ConnectionTimeout;
+        //        AddParametersToCommand(parameters, cmd);
 
-                IDataAdapter adapter = CreateDataAdapter(cmd);
+        //        IDataAdapter adapter = CreateDataAdapter(cmd);
 
-                DataSet dataSet = new();
-                adapter.Fill(dataSet);
-                CommitTransaction();
-                ExtractAndReloadParameterCollection(parameters, cmd);
+        //        DataSet dataSet = new();
+        //        adapter.Fill(dataSet);
+        //        CommitTransaction();
+        //        ExtractAndReloadParameterCollection(parameters, cmd);
 
-                return dataSet;
-            }
-            catch (Exception ex)
-            {
-                throw new Exceptions.CodedThoughtApplicationException(ex.Message + "[" + commandText + "]", ex);
-            }
-        }
+        //        return dataSet;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw new Exceptions.CodedThoughtApplicationException(ex.Message + "[" + commandText + "]", ex);
+        //    }
+        //}
         #endregion Executing Queries
 
         #region GetValue Methods
@@ -688,12 +689,12 @@ namespace CodedThought.Core.Data.MySql
         /// Gets the query used to list all tables in the database.
         /// </summary>
         /// <returns></returns>
-        public override string GetTableListQuery() => "SELECT TABLE_NAME, TABLE_SCHEMA FROM INFORMATION_SCHEMA.TABLES ORDER BY TABLE_NAME";
+        public override string GetTableListQuery() => $"SELECT TABLE_NAME, TABLE_SCHEMA FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_SCHEMA = '{Connection.Database}' ORDER BY TABLE_NAME";
         /// <summary>
         /// Gets the query used to list all views in the database.
         /// </summary>
         /// <returns></returns>
-        public override string GetViewListQuery() => "SELECT TABLE_NAME, TABLE_SCHEMA FROM INFORMATION_SCHEMA.VIEWS ORDER BY TABLE_NAME";
+        public override string GetViewListQuery() => $"SELECT TABLE_NAME, TABLE_SCHEMA FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = '{Connection.Database}' ORDER BY TABLE_NAME";
 
         /// <summary>
         /// Gets the table's column definition query.
@@ -719,9 +720,11 @@ namespace CodedThought.Core.Data.MySql
                 sql.Append("SELECT COLUMN_NAME, DATA_TYPE, ");
                 sql.Append("CASE WHEN C.IS_NULLABLE = 'NO' THEN 0 ELSE 1 END as IS_NULLABLE, ");
                 sql.Append("CASE WHEN C.CHARACTER_MAXIMUM_LENGTH IS NULL THEN 0 ELSE C.CHARACTER_MAXIMUM_LENGTH END AS CHARACTER_MAXIMUM_LENGTH, ");
-                sql.Append("C.ORDINAL_POSITION - 1 as ORDINAL_POSITION, CASE WHEN C.Extra LIKE '%auto_increment%' THEN 1 ELSE 0 END as IS_IDENTITY ");
+                sql.Append("C.ORDINAL_POSITION - 1 as ORDINAL_POSITION, ");
+                sql.Append("CASE WHEN C.Extra LIKE '%auto_increment%' THEN 1 ELSE 0 END as IS_IDENTITY, ");
+                sql.Append("CASE WHEN C.COLUMN_KEY = 'PRI' THEN 1 ELSE 0 END as IS_PRIMARY_KEY ");
                 sql.Append("FROM INFORMATION_SCHEMA.COLUMNS C ");
-                sql.AppendFormat("WHERE TABLE_SCHEMA = '{0}' AND TABLE_NAME = '{0}' ", Connection.Database, tName);
+                sql.Append($"WHERE TABLE_SCHEMA = '{Connection.Database}' AND TABLE_NAME = '{tName}' ");
                 sql.Append("ORDER BY C.ORDINAL_POSITION");
                 return sql.ToString();
             }
@@ -779,11 +782,13 @@ namespace CodedThought.Core.Data.MySql
                         Name = row["COLUMN_NAME"].ToString(),
                         IsNullable = Convert.ToBoolean(row["IS_NULLABLE"]),
                         SystemType = ToSystemType(row["DATA_TYPE"].ToString()),
+                        Type = ToDbSupportedType(row["DATA_TYPE"].ToString()),
                         MaxLength = Convert.ToInt32(row["CHARACTER_MAXIMUM_LENGTH"]),
                         IsIdentity = Convert.ToBoolean(row["IS_IDENTITY"]),
+                        IsPrimary = Convert.ToBoolean(row["IS_PRIMARY_KEY"]),
                         OrdinalPosition = Convert.ToInt32(row["ORDINAL_POSITION"])
                     };
-
+                    column.DbType = ToDbType(column.SystemType);
                     tableDefinitions.Add(column);
                 }
                 return tableDefinitions;
@@ -833,10 +838,13 @@ namespace CodedThought.Core.Data.MySql
                             Name = col["COLUMN_NAME"].ToString(),
                             IsNullable = Convert.ToBoolean(col["IS_NULLABLE"]),
                             SystemType = ToSystemType(col["DATA_TYPE"].ToString()),
+                            Type = ToDbSupportedType(col["DATA_TYPE"].ToString()),
                             MaxLength = Convert.ToInt32(col["CHARACTER_MAXIMUM_LENGTH"]),
                             IsIdentity = Convert.ToBoolean(col["IS_IDENTITY"]),
+                            IsPrimary = Convert.ToBoolean(col["IS_PRIMARY_KEY"]),
                             OrdinalPosition = Convert.ToInt32(col["ORDINAL_POSITION"])
                         };
+                        column.DbType = ToDbType(column.SystemType);
                         // Add this column to the list.
                         tableSchema.Columns.Add(column);
                     }
@@ -875,8 +883,10 @@ namespace CodedThought.Core.Data.MySql
                             Name = col["COLUMN_NAME"].ToString(),
                             IsNullable = Convert.ToBoolean(col["IS_NULLABLE"]),
                             SystemType = ToSystemType(col["DATA_TYPE"].ToString()),
+                            Type = ToDbSupportedType(col["DATA_TYPE"].ToString()),
                             MaxLength = Convert.ToInt32(col["CHARACTER_MAXIMUM_LENGTH"]),
                             IsIdentity = Convert.ToBoolean(col["IS_IDENTITY"]),
+                            IsPrimary = Convert.ToBoolean(col["IS_PRIMARY_KEY"]),
                             OrdinalPosition = Convert.ToInt32(col["ORDINAL_POSITION"])
                         };
                         // Add this column to the list.
