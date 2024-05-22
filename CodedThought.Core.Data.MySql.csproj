@@ -4,17 +4,18 @@
 	<TargetFramework>net8.0</TargetFramework>
 	<ImplicitUsings>enable</ImplicitUsings>
 	<Nullable>enable</Nullable>
-	<AssemblyVersion>1.0.0.0</AssemblyVersion>
-	<FileVersion>1.0.0.0</FileVersion>
-	<VersionPrefix>1.0.0-alpha</VersionPrefix>
+	<AssemblyVersion>1.0.0.6</AssemblyVersion>
+	<FileVersion>1.0.0.6</FileVersion>
+	<VersionPrefix>1.0.0.6</VersionPrefix>
+	<Version>1.0.0-alpha-6</Version>
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	<Title>CodedThought.Core.Data.MySql</Title>
 	<Authors>Erik Bartlow</Authors>
 	<Company>CodedThought</Company>
 	<Description>The CodedThought.Core.Data.MySql package is a custom database provider for use with MySql Server.</Description>
-	<PackageProjectUrl>https://github.com/erikbartlow/CodedThought.Core</PackageProjectUrl>
+	<PackageProjectUrl>https://www.nuget.org/packages/CodedThought.Core.Data.MySql/</PackageProjectUrl>
 	<RepositoryType>git</RepositoryType>
-	<RepositoryUrl>https://github.com/erikbartlow/CodedThought.Core</RepositoryUrl>
+	<RepositoryUrl>https://github.com/erikbartlow/CodedThought.Core.Data.MySql</RepositoryUrl>
 	<IncludeContentInPack>true</IncludeContentInPack>
 	<PublishRepositoryUrl>true</PublishRepositoryUrl>
 	<PackageLicenseFile>LICENSE</PackageLicenseFile>
@@ -28,7 +29,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0" />
-    <PackageReference Include="MySqlConnector" Version="(2.3.5,)" />
+    <PackageReference Include="MySqlConnector" Version="2.3.7" />
   </ItemGroup>
 
   <ItemGroup>
