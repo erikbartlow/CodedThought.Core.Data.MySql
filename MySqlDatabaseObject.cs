@@ -1127,6 +1127,7 @@ namespace CodedThought.Core.Data.MySql
             { "bigint", typeof(long) },
             { "smallint", typeof(short) },
             { "tinyint", typeof(byte) },
+            { "bit", typeof(Boolean) },
             { "mediumint", typeof(int) }, // Mapping to int in SQL Server
             { "float", typeof(double) },
             { "double", typeof(double) },
@@ -1145,7 +1146,7 @@ namespace CodedThought.Core.Data.MySql
             }
             else
             {
-                throw new ArgumentException("MySQL data type not supported or recognized.");
+                throw new ArgumentException($"MySQL data type, {mySqlType}, not supported or recognized.");
             }
         }
         /// <summary>
@@ -1166,6 +1167,7 @@ namespace CodedThought.Core.Data.MySql
             { "bigint", DbTypeSupported.dbInt64 },
             { "smallint", DbTypeSupported.dbInt16 },
             { "tinyint", DbTypeSupported.dbInt16 },
+            { "bit", DbTypeSupported.dbBit },
             { "mediumint", DbTypeSupported.dbInt32 }, // Mapping to int in SQL Server
             { "float", DbTypeSupported.dbDouble },
             { "double", DbTypeSupported.dbDouble },
@@ -1183,7 +1185,7 @@ namespace CodedThought.Core.Data.MySql
             }
             else
             {
-                throw new ArgumentException("MySQL data type not supported or recognized.");
+                throw new ArgumentException($"MySQL data type, {dbTypeName}, not a supported or recognized DbTypeSupported type.");
             }
         }
 
