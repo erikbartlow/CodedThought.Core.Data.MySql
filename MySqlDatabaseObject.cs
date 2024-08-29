@@ -21,7 +21,7 @@ namespace CodedThought.Core.Data.MySql
 
         #region Constructor
 
-        public MySqlDatabaseObject() : base() { _connection = new(); }
+        public MySqlDatabaseObject() : base() => _connection = new();
 
         #endregion Constructor
 
@@ -39,7 +39,7 @@ namespace CodedThought.Core.Data.MySql
         public override IDbConnection Connection => _connection == null ? (MySqlConnection) base.Connection : (MySqlConnection) _connection;
 
         /// <summary>
-        /// Opens an Oracle Connection
+        /// Opens a MySql Connection
         /// </summary>
         /// <returns></returns>
         protected override IDbConnection OpenConnection()
@@ -48,6 +48,7 @@ namespace CodedThought.Core.Data.MySql
             {
                 _connection = new MySqlConnection(ConnectionString);
                 _connection.Open();
+                
                 return _connection;
             }
             catch (MySqlException ex)
@@ -55,7 +56,23 @@ namespace CodedThought.Core.Data.MySql
                 throw new ApplicationException("Could not open Connection.  Check connection string" + "/r/n" + ex.Message + "/r/n" + ex.StackTrace, ex);
             }
         }
-
+        /// <summary>
+        /// Opens a MySql Connection asynchronously.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="ApplicationException"></exception>
+        protected override async Task<IDbConnection> OpenConnectionAsync()
+        {
+            try
+            {
+                _connection = new MySqlConnection(ConnectionString);
+                await _connection.OpenAsync(); return _connection;
+            }
+            catch (MySqlException ex)
+            {
+                throw new ApplicationException("Could not open Connection.  Check connection string" + "/r/n" + ex.Message + "/r/n" + ex.StackTrace, ex);
+            }
+        }
         #endregion Transaction and Connection Methods
 
         #region Other Override Methods
@@ -75,6 +92,19 @@ namespace CodedThought.Core.Data.MySql
             {
                 throw;
             }
+        }
+        /// <summary>
+        /// Test the connection using an asyncronous process.
+        /// </summary>
+        /// <returns></returns>
+        public override async Task<bool> TestConnectionAsync()
+        {
+            try
+            {
+                await OpenConnectionAsync();
+                return Connection.State == ConnectionState.Open;
+            }
+            catch { throw; }
         }
         /// <summary>
         /// Creates a Sql Data Adapter object with the passed Command object.
@@ -172,40 +202,50 @@ namespace CodedThought.Core.Data.MySql
                 {
                     case DbTypeSupported.dbChar:
                     case DbTypeSupported.dbVarChar:
-                        isNull = (extractedData == null || (string) extractedData == "");
+                    case DbTypeSupported.dbNVarChar:
+                        isNull = extractedData == null || (string) extractedData == "";
                         sqlDataType = (int) MySqlDbType.VarChar;
                         break;
+                    case DbTypeSupported.dbTinyInt:
+                    case DbTypeSupported.dbInt16:
+                        isNull = (Int16) extractedData == Int16.MinValue;
+                        sqlDataType = (int) MySqlDbType.Int16;
+                        break;
                     case DbTypeSupported.dbInt32:
-                        isNull = ((int) extractedData == int.MinValue);
+                        isNull = (Int32) extractedData == Int32.MinValue;
                         sqlDataType = (int) MySqlDbType.Int32;
                         break;
                     case DbTypeSupported.dbInt64:
-                        isNull = ((int) extractedData == int.MinValue);
+                        isNull = (Int64) extractedData == Int64.MinValue;
                         sqlDataType = (int) MySqlDbType.Int64;
                         break;
                     case DbTypeSupported.dbDouble:
-                        isNull = ((double) extractedData == double.MinValue);
+                        isNull = (double) extractedData == double.MinValue;
                         sqlDataType = (int) MySqlDbType.Double;
                         break;
                     case DbTypeSupported.dbDateTime:
-                        isNull = ((DateTime) extractedData == DateTime.MinValue);
+                        isNull = (DateTime) extractedData == DateTime.MinValue;
                         sqlDataType = (int) MySqlDbType.DateTime;
                         break;
                     case DbTypeSupported.dbBlob:    // Text, not Image
                     case DbTypeSupported.dbVarBinary:
-                        isNull = (extractedData == null);
+                        isNull = extractedData == null;
                         sqlDataType = (int) MySqlDbType.VarBinary;
                         break;
                     case DbTypeSupported.dbDecimal:
-                        isNull = ((decimal) extractedData == decimal.MinValue);
+                        isNull = (decimal) extractedData == decimal.MinValue;
                         sqlDataType = (int) MySqlDbType.Decimal;
                         break;
                     case DbTypeSupported.dbBit:
-                        isNull = (extractedData == null);
+                        isNull = extractedData == null;
                         sqlDataType = (int) MySqlDbType.Bool;
                         break;
+                    case DbTypeSupported.dbGUID:
+                        isNull = extractedData == null;
+                        sqlDataType = (int) MySqlDbType.Guid;
+                        break;
                     default:
-                        throw new ApplicationException("Data type not supported.  DataTypes currently suported are: DbTypeSupported.dbString, DbTypeSupported.dbInt32, DbTypeSupported.dbDouble, DbTypeSupported.dbDateTime, DbTypeSupported.dbChar");
+                        throw new ApplicationException($"Data type, [{col.Type}], not supported.");
                 }
             }
             catch (Exception ex)
@@ -239,7 +279,12 @@ namespace CodedThought.Core.Data.MySql
             {
                 case DbTypeSupported.dbVarChar:
                 case DbTypeSupported.dbChar:
+                case DbTypeSupported.dbNVarChar:
                     sqlDataType = MySqlDbType.VarChar;
+                    break;
+                case DbTypeSupported.dbTinyInt:
+                case DbTypeSupported.dbInt16:
+                    sqlDataType = MySqlDbType.Int16;
                     break;
                 case DbTypeSupported.dbInt32:
                     sqlDataType = MySqlDbType.Int32;
@@ -262,8 +307,11 @@ namespace CodedThought.Core.Data.MySql
                 case DbTypeSupported.dbBit:
                     sqlDataType = MySqlDbType.Bool;
                     break;
+                case DbTypeSupported.dbGUID:
+                    sqlDataType = MySqlDbType.Guid;
+                    break;
                 default:
-                    throw new ApplicationException("Data type not supported.  DataTypes currently suported are: DbTypeSupported.dbString, DbTypeSupported.dbInt32, DbTypeSupported.dbDouble, DbTypeSupported.dbDateTime, DbTypeSupported.dbChar");
+                    throw new ApplicationException($"Data type, [{returnType}], not supported.");
             }
 
             MySqlParameter returnParam = CreateDbServerParam(parameterName, sqlDataType);
@@ -286,7 +334,12 @@ namespace CodedThought.Core.Data.MySql
             {
                 case DbTypeSupported.dbVarChar:
                 case DbTypeSupported.dbChar:
+                case DbTypeSupported.dbNVarChar:
                     sqlDataType = MySqlDbType.VarChar;
+                    break;
+                case DbTypeSupported.dbTinyInt:
+                case DbTypeSupported.dbInt16:
+                    sqlDataType = MySqlDbType.Int16;
                     break;
                 case DbTypeSupported.dbInt32:
                     sqlDataType = MySqlDbType.Int32;
@@ -309,9 +362,11 @@ namespace CodedThought.Core.Data.MySql
                 case DbTypeSupported.dbBit:
                     sqlDataType = MySqlDbType.Bool;
                     break;
-
+                case DbTypeSupported.dbGUID:
+                    sqlDataType = MySqlDbType.Guid;
+                    break;
                 default:
-                    throw new ApplicationException("Data type not supported.  DataTypes currently suported are: DbTypeSupported.dbString, DbTypeSupported.dbInt32, DbTypeSupported.dbDouble, DbTypeSupported.dbDateTime, DbTypeSupported.dbChar");
+                    throw new ApplicationException($"Data type, [{returnType}], not supported.");
             }
 
             MySqlParameter returnParam = CreateDbServerParam(parameterName, sqlDataType);
@@ -428,6 +483,7 @@ namespace CodedThought.Core.Data.MySql
                 ParameterCollection parameters = [];
                 StringBuilder sbColumns = new();
                 StringBuilder sbValues = new();
+                string sourceName = DefaultSchemaName;
 
                 for (int i = 0; i < columns.Count; i++)
                 {
@@ -442,12 +498,15 @@ namespace CodedThought.Core.Data.MySql
                         parameters.Add(parameter);
                     }
                 }
-
-                StringBuilder sql = new("INSERT INTO " + tableName + " (");
+                if (!String.IsNullOrEmpty(sourceName))
+                {
+                    sourceName = $"{sourceName}.{tableName}";
+                }
+                StringBuilder sql = new($"INSERT INTO {sourceName} (");
                 sql.Append(sbColumns.Remove(0, 2));
                 sql.Append(") VALUES (");
                 sql.Append(sbValues.Remove(0, 2));
-                sql.Append(") ");
+                sql.Append("); ");
 
                 // ================================================================
                 // print sql to output window to debuging purpose
@@ -455,12 +514,15 @@ namespace CodedThought.Core.Data.MySql
                 // ================================================================
 
                 //Check if we have an identity Column
-                if (store.GetPrimaryKey(obj) == 0 || store.GetPrimaryKey(obj) == Int32.MinValue)
+                if (store.HasKeyColumn(obj))
                 {
-                    sql.Append("SELECT LAST_INSERT_ID() ");
-                    // ExecuteScalar will execute both the INSERT statement and the SELECT statement.
-                    int retVal = System.Convert.ToInt32(ExecuteScalar(sql.ToString(), System.Data.CommandType.Text, parameters));
-                    store.SetPrimaryKey(obj, retVal);
+                    if (store.GetPrimaryKeyColumnAttribute(obj).IsIdentity)
+                    {
+                        sql.Append("SELECT LAST_INSERT_ID(); ");
+                        // ExecuteScalar will execute both the INSERT statement and the SELECT statement.
+                        int retVal = System.Convert.ToInt32(ExecuteScalar(sql.ToString(), System.Data.CommandType.Text, parameters));
+                        store.SetPrimaryKey(obj, retVal);
+                    }
                 }
                 else
                 {
@@ -1137,6 +1199,7 @@ namespace CodedThought.Core.Data.MySql
             { "timestamp", typeof(DateTime) }, // Mapping to datetime in SQL Server
             { "time", typeof(TimeSpan) },
             { "year", typeof(short) }, // Mapping to smallint in SQL Server
+            {"guid", typeof(Guid) }
             // Add more mappings as needed
         };
 
