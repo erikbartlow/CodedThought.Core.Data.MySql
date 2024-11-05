@@ -913,7 +913,7 @@ namespace CodedThought.Core.Data.MySql
                             IsNullable = Convert.ToBoolean(col["IS_NULLABLE"]),
                             SystemType = ToSystemType(col["DATA_TYPE"].ToString()),
                             Type = ToDbSupportedType(col["DATA_TYPE"].ToString()),
-                            MaxLength = Convert.ToInt32(col["CHARACTER_MAXIMUM_LENGTH"]),
+                            MaxLength = Convert.ToInt64(col["CHARACTER_MAXIMUM_LENGTH"]),
                             IsIdentity = Convert.ToBoolean(col["IS_IDENTITY"]),
                             IsPrimary = Convert.ToBoolean(col["IS_PRIMARY_KEY"]),
                             OrdinalPosition = Convert.ToInt32(col["ORDINAL_POSITION"])
@@ -1216,35 +1216,35 @@ namespace CodedThought.Core.Data.MySql
         public override DbTypeSupported ToDbSupportedType(string dbTypeName)
         {
             Dictionary<string, DbTypeSupported> typeMap = new Dictionary<string, DbTypeSupported>()
-        {
-            { "varchar", DbTypeSupported.dbNVarChar },
-            { "char", DbTypeSupported.dbChar },
-            { "text", DbTypeSupported.dbNVarChar },
-            { "longtext", DbTypeSupported.dbNVarChar },
-            { "int", DbTypeSupported.dbInt32 },
-            { "bigint", DbTypeSupported.dbInt64 },
-            { "smallint", DbTypeSupported.dbInt16 },
-            { "tinyint", DbTypeSupported.dbInt16 },
-            { "bit", DbTypeSupported.dbBit },
-            { "mediumint", DbTypeSupported.dbInt32 }, // Mapping to int in SQL Server
-            { "float", DbTypeSupported.dbDouble },
-            { "double", DbTypeSupported.dbDouble },
-            { "decimal", DbTypeSupported.dbDecimal },
-            { "date", DbTypeSupported.dbDateTime },
-            { "datetime", DbTypeSupported.dbDateTime },
-            { "timestamp", DbTypeSupported.dbDateTime2 }, // Mapping to datetime in SQL Server
-            { "time", DbTypeSupported.dbTime },
-            { "year", DbTypeSupported.dbInt16 } // Mapping to smallint in SQL Server
-        };
+            {
+                { "char", DbTypeSupported.dbChar },
+                { "varchar", DbTypeSupported.dbNVarChar },
+                { "text", DbTypeSupported.dbNVarChar },
+                { "longtext", DbTypeSupported.dbNVarChar },
+                { "mediumtext", DbTypeSupported.dbNVarChar },
+                { "blob", DbTypeSupported.dbBlob },
+                { "longblob", DbTypeSupported.dbImage },
+                { "mediumblob", DbTypeSupported.dbImage },
+                { "int", DbTypeSupported.dbInt32 },
+                { "smallint", DbTypeSupported.dbInt16 },
+                { "tinyint", DbTypeSupported.dbInt16 },
+                { "bit", DbTypeSupported.dbBit },
+                { "mediumint", DbTypeSupported.dbInt32 }, // Mapping to int in SQL Server
+                { "bigint", DbTypeSupported.dbInt64 },
+                { "float", DbTypeSupported.dbDouble },
+                { "double", DbTypeSupported.dbDouble },
+                { "decimal", DbTypeSupported.dbDecimal },
+                { "date", DbTypeSupported.dbDateTime },
+                { "datetime", DbTypeSupported.dbDateTime },
+                { "timestamp", DbTypeSupported.dbDateTime2 }, // Mapping to datetime in SQL Server
+                { "time", DbTypeSupported.dbTime },
+                { "year", DbTypeSupported.dbInt16 }, // Mapping to smallint in SQL Server
+                { "guid", DbTypeSupported.dbGUID },
+            };
 
-            if (typeMap.ContainsKey(dbTypeName.ToLower()))
-            {
-                return typeMap[dbTypeName.ToLower()];
-            }
-            else
-            {
-                throw new ArgumentException($"MySQL data type, {dbTypeName}, not a supported or recognized DbTypeSupported type.");
-            }
+            return typeMap.ContainsKey(dbTypeName.ToLower())
+                ? typeMap[dbTypeName.ToLower()]
+                : throw new ArgumentException($"MySQL data type, {dbTypeName}, not a supported or recognized DbTypeSupported type.");
         }
 
         /// <summary>
@@ -1262,10 +1262,10 @@ namespace CodedThought.Core.Data.MySql
                 { "char", typeof(string) },
                 { "varchar", typeof(string) },
                 { "text", typeof(string) },
-                { "blob", typeof(string) },
-                { "longblob", typeof(string) },
+                { "blob", typeof(byte[]) },
+                { "longblob", typeof(byte[]) },
+                { "mediumblob", typeof(byte[]) },
                 { "longtext", typeof(string) },
-                { "mediumblob", typeof(string) },
                 { "mediumtext", typeof(string) },
                 { "int", typeof(int) },
                 { "tinyint", typeof(byte) },
