@@ -9,7 +9,6 @@ using MySqlConnector;
 
 namespace CodedThought.Core.Data.MySql
 {
-
     /// <summary>MySqlDatabaseObject provides all MySql specific functionality needed by DBStore and its family of classes.</summary>
     public class MySqlDatabaseObject : DatabaseObject, IDatabaseObject, IDbSchema
     {
@@ -17,7 +16,7 @@ namespace CodedThought.Core.Data.MySql
 
         private MySqlConnection _connection;
 
-        #endregion
+        #endregion Declarations
 
         #region Constructor
 
@@ -26,11 +25,6 @@ namespace CodedThought.Core.Data.MySql
         #endregion Constructor
 
         #region Transaction and Connection Methods
-
-        /// <summary>
-        /// Commits updates and inserts.  This is only for Oracle database operations.
-        /// </summary>
-        public override void Commit() => ExecuteNonQuery("COMMIT", CommandType.Text);
 
         /// <summary>
         /// Returns the active connection. If the stack has a connection then it is returned.
@@ -48,7 +42,7 @@ namespace CodedThought.Core.Data.MySql
             {
                 _connection = new MySqlConnection(ConnectionString);
                 _connection.Open();
-                
+
                 return _connection;
             }
             catch (MySqlException ex)
@@ -56,6 +50,7 @@ namespace CodedThought.Core.Data.MySql
                 throw new ApplicationException("Could not open Connection.  Check connection string" + "/r/n" + ex.Message + "/r/n" + ex.StackTrace, ex);
             }
         }
+
         /// <summary>
         /// Opens a MySql Connection asynchronously.
         /// </summary>
@@ -66,16 +61,41 @@ namespace CodedThought.Core.Data.MySql
             try
             {
                 _connection = new MySqlConnection(ConnectionString);
-                await _connection.OpenAsync(); return _connection;
+                await _connection.OpenAsync();
+                return _connection;
             }
             catch (MySqlException ex)
             {
                 throw new ApplicationException("Could not open Connection.  Check connection string" + "/r/n" + ex.Message + "/r/n" + ex.StackTrace, ex);
             }
         }
+
+        /// <summary>
+        /// Commits updates and inserts.  This is only for Oracle database operations.
+        /// </summary>
+        public override void Commit() => ExecuteNonQuery("COMMIT", CommandType.Text);
+
         #endregion Transaction and Connection Methods
 
         #region Other Override Methods
+
+        /// <summary>
+        /// Creates a Sql Data Adapter object with the passed Command object.
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <returns></returns>
+        protected override IDataAdapter CreateDataAdapter(IDbCommand cmd) => new MySqlDataAdapter(cmd as MySqlCommand);
+
+        /// <summary>Convert any data type to Char</summary>
+        /// <param name="columnName"></param>
+        /// <returns></returns>
+        public override string ConvertToChar(string columnName) => "CONVERT(varchar, " + columnName + ")";
+
+        public override IDataParameter CreateApiParameter(string paraemterName, string parameterValue) => throw new NotImplementedException();
+
+        /// <summary>Creates the parameter collection.</summary>
+        /// <returns></returns>
+        public override ParameterCollection CreateParameterCollection() => new(this);
 
         /// <summary>
         /// Tests the connection to the database.
@@ -93,6 +113,7 @@ namespace CodedThought.Core.Data.MySql
                 throw;
             }
         }
+
         /// <summary>
         /// Test the connection using an asyncronous process.
         /// </summary>
@@ -106,25 +127,11 @@ namespace CodedThought.Core.Data.MySql
             }
             catch { throw; }
         }
-        /// <summary>
-        /// Creates a Sql Data Adapter object with the passed Command object.
-        /// </summary>
-        /// <param name="cmd"></param>
-        /// <returns></returns>
-        protected override IDataAdapter CreateDataAdapter(IDbCommand cmd) => new MySqlDataAdapter(cmd as MySqlCommand);
-
-        /// <summary>Convert any data type to Char</summary>
-        /// <param name="columnName"></param>
-        /// <returns></returns>
-        public override string ConvertToChar(string columnName) => "CONVERT(varchar, " + columnName + ")";
-        /// <summary>Creates the parameter collection.</summary>
-        /// <returns></returns>
-        public override ParameterCollection CreateParameterCollection() => new(this);
-
-        public override IDataParameter CreateApiParameter(string paraemterName, string parameterValue) => throw new NotImplementedException();
-
 
         #region Parameters
+
+        /// <summary>Gets the column delimiter character.</summary>
+        public override string ColumnDelimiter => throw new NotImplementedException();
 
         /// <summary>Returns the param connector for MySql, @</summary>
         /// <returns></returns>
@@ -133,9 +140,6 @@ namespace CodedThought.Core.Data.MySql
         /// <summary>Gets the wild card character.</summary>
         /// <value>The wild card character.</value>
         public override string WildCardCharacter => "%";
-
-        /// <summary>Gets the column delimiter character.</summary>
-        public override string ColumnDelimiter => throw new NotImplementedException();
 
         /// <summary>Creates the SQL server param.</summary>
         /// <param name="srcTableColumnName">Name of the SRC table column.</param>
@@ -164,11 +168,20 @@ namespace CodedThought.Core.Data.MySql
             return param;
         }
 
-        /// <summary>Creates the XML parameter.</summary>
-        /// <param name="srcTaleColumnName">Name of the SRC tale column.</param>
-        /// <param name="parameterValue">   The parameter value.</param>
+        public override IDataParameter CreateBetweenParameter(string srcTableColumnName, BetweenParameter betweenParam) => throw new NotImplementedException();
+
+        /// <summary>Creates a Blob parameter based on supported database.</summary>
+        /// <param name="srcTableColumnName"></param>
+        /// <param name="parameterValue">    </param>
+        /// <param name="size">              </param>
         /// <returns></returns>
-        public override IDataParameter CreateXMLParameter(string srcTaleColumnName, string parameterValue) => throw new NotImplementedException();
+        public IDataParameter CreateBlobParameter(string srcTableColumnName, byte[] parameterValue, int size)
+        {
+            IDataParameter returnValue = CreateDbServerParam(srcTableColumnName, MySqlDbType.Blob, size);
+            returnValue.Value = parameterValue;
+
+            return returnValue;
+        }
 
         /// <summary>Creates a boolean parameter.</summary>
         /// <param name="srcTaleColumnName">Name of the SRC tale column.</param>
@@ -183,8 +196,137 @@ namespace CodedThought.Core.Data.MySql
             return returnValue;
         }
 
+        /// <summary>Creates a Char parameter based on supported database.</summary>
+        /// <param name="srcTableColumnName"></param>
+        /// <param name="parameterValue">    </param>
+        /// <param name="size">              </param>
+        /// <returns></returns>
+        public override IDataParameter CreateCharParameter(string srcTableColumnName, string parameterValue, int size)
+        {
+            IDataParameter returnValue = CreateDbServerParam(srcTableColumnName, MySqlDbType.VarChar);
+            returnValue.Value = parameterValue != string.Empty ? parameterValue : DBNull.Value;
+
+            return returnValue;
+        }
+
+        /// <summary>Create a data time parameter based on supported database.</summary>
+        /// <param name="srcTableColumnName"></param>
+        /// <param name="parameterValue">    </param>
+        /// <returns></returns>
+        public override IDataParameter CreateDateTimeParameter(string srcTableColumnName, DateTime parameterValue)
+        {
+            IDataParameter returnValue = CreateDbServerParam(srcTableColumnName, MySqlDbType.DateTime);
+            returnValue.Value = parameterValue != DateTime.MinValue ? parameterValue : DBNull.Value;
+
+            return returnValue;
+        }
+
+        /// <summary>Creates a Double parameter based on supported database</summary>
+        /// <param name="srcTableColumnName"></param>
+        /// <param name="parameterValue">    </param>
+        /// <returns></returns>
+        public override IDataParameter CreateDoubleParameter(string srcTableColumnName, double parameterValue)
+        {
+            IDataParameter returnValue = CreateDbServerParam(srcTableColumnName, MySqlDbType.Double);
+            returnValue.Value = parameterValue != double.MinValue ? parameterValue : DBNull.Value;
+
+            return returnValue;
+        }
+
+        /// <summary>Create an empty parameter for MySql</summary>
+        /// <returns></returns>
+        public override IDataParameter CreateEmptyParameter() => new MySqlParameter();
+
+        /// <summary>Creates the GUID parameter.</summary>
+        /// <param name="srcTableColumnName">Name of the SRC table column.</param>
+        /// <param name="parameterValue">    The parameter value.</param>
+        /// <returns></returns>
+        public override IDataParameter CreateGuidParameter(string srcTableColumnName, Guid parameterValue)
+        {
+            IDataParameter returnValue = CreateDbServerParam(srcTableColumnName, MySqlDbType.Guid);
+            returnValue.Value = parameterValue;
+
+            return returnValue;
+        }
+
+        /// <summary>Creates a Int32 parameter for the supported database</summary>
+        /// <param name="srcTableColumnName"></param>
+        /// <param name="parameterValue">    </param>
+        /// <returns></returns>
+        public override IDataParameter CreateInt32Parameter(string srcTableColumnName, int parameterValue)
+        {
+            IDataParameter returnValue = CreateDbServerParam(srcTableColumnName, MySqlDbType.Int32);
+            returnValue.Value = parameterValue != int.MinValue ? parameterValue : DBNull.Value;
+
+            return returnValue;
+        }
+
         /// <summary>
-        /// Creates parameters for the supported database.  
+        /// Creates the output parameter.
+        /// </summary>
+        /// <param name="parameterName">Name of the parameter.</param>
+        /// <param name="returnType">Type of the return.</param>
+        /// <returns></returns>
+        /// <exception cref="ApplicationException">Data type not supported.  DataTypes currently suported are: DbTypeSupported.dbString, DbTypeSupported.dbInt32, DbTypeSupported.dbDouble, DbTypeSupported.dbDateTime, DbTypeSupported.dbChar</exception>
+        public override IDataParameter CreateOutputParameter(string parameterName, DbTypeSupported returnType)
+        {
+            MySqlDbType sqlDataType;
+            switch (returnType)
+            {
+                case DbTypeSupported.dbVarChar:
+                case DbTypeSupported.dbChar:
+                case DbTypeSupported.dbNVarChar:
+                    sqlDataType = MySqlDbType.VarChar;
+                    break;
+
+                case DbTypeSupported.dbTinyInt:
+                case DbTypeSupported.dbInt16:
+                    sqlDataType = MySqlDbType.Int16;
+                    break;
+
+                case DbTypeSupported.dbInt32:
+                    sqlDataType = MySqlDbType.Int32;
+                    break;
+
+                case DbTypeSupported.dbInt64:
+                    sqlDataType = MySqlDbType.Int64;
+                    break;
+
+                case DbTypeSupported.dbDouble:
+                    sqlDataType = MySqlDbType.Double;
+                    break;
+
+                case DbTypeSupported.dbDateTime:
+                    sqlDataType = MySqlDbType.DateTime;
+                    break;
+
+                case DbTypeSupported.dbBlob:
+                    sqlDataType = MySqlDbType.Blob;
+                    break;
+
+                case DbTypeSupported.dbDecimal:
+                    sqlDataType = MySqlDbType.Decimal;
+                    break;
+
+                case DbTypeSupported.dbBit:
+                    sqlDataType = MySqlDbType.Bool;
+                    break;
+
+                case DbTypeSupported.dbGUID:
+                    sqlDataType = MySqlDbType.Guid;
+                    break;
+
+                default:
+                    throw new ApplicationException($"Data type, [{returnType}], not supported.");
+            }
+
+            MySqlParameter returnParam = CreateDbServerParam(parameterName, sqlDataType);
+            returnParam.Direction = ParameterDirection.Output;
+            return returnParam;
+        }
+
+        /// <summary>
+        /// Creates parameters for the supported database.
         /// </summary>
         /// <param name="obj">The Business Entity from which to extract the data</param>
         /// <param name="col">The column for which the data must be extracted from the buisiness entity</param>
@@ -206,44 +348,54 @@ namespace CodedThought.Core.Data.MySql
                         isNull = extractedData == null || (string) extractedData == "";
                         sqlDataType = (int) MySqlDbType.VarChar;
                         break;
+
                     case DbTypeSupported.dbTinyInt:
                     case DbTypeSupported.dbInt16:
                         isNull = (Int16) extractedData == Int16.MinValue;
                         sqlDataType = (int) MySqlDbType.Int16;
                         break;
+
                     case DbTypeSupported.dbInt32:
                         isNull = (Int32) extractedData == Int32.MinValue;
                         sqlDataType = (int) MySqlDbType.Int32;
                         break;
+
                     case DbTypeSupported.dbInt64:
                         isNull = (Int64) extractedData == Int64.MinValue;
                         sqlDataType = (int) MySqlDbType.Int64;
                         break;
+
                     case DbTypeSupported.dbDouble:
                         isNull = (double) extractedData == double.MinValue;
                         sqlDataType = (int) MySqlDbType.Double;
                         break;
+
                     case DbTypeSupported.dbDateTime:
                         isNull = (DateTime) extractedData == DateTime.MinValue;
                         sqlDataType = (int) MySqlDbType.DateTime;
                         break;
+
                     case DbTypeSupported.dbBlob:    // Text, not Image
                     case DbTypeSupported.dbVarBinary:
                         isNull = extractedData == null;
                         sqlDataType = (int) MySqlDbType.VarBinary;
                         break;
+
                     case DbTypeSupported.dbDecimal:
                         isNull = (decimal) extractedData == decimal.MinValue;
                         sqlDataType = (int) MySqlDbType.Decimal;
                         break;
+
                     case DbTypeSupported.dbBit:
                         isNull = extractedData == null;
                         sqlDataType = (int) MySqlDbType.Bool;
                         break;
+
                     case DbTypeSupported.dbGUID:
                         isNull = extractedData == null;
                         sqlDataType = (int) MySqlDbType.Guid;
                         break;
+
                     default:
                         throw new ApplicationException($"Data type, [{col.Type}], not supported.");
                 }
@@ -258,66 +410,6 @@ namespace CodedThought.Core.Data.MySql
             parameter.Value = isNull ? DBNull.Value : extractedData;
 
             return parameter;
-        }
-
-        /// <summary>Create an empty parameter for MySql</summary>
-        /// <returns></returns>
-        public override IDataParameter CreateEmptyParameter() => new MySqlParameter();
-
-
-        /// <summary>
-        /// Creates the output parameter.
-        /// </summary>
-        /// <param name="parameterName">Name of the parameter.</param>
-        /// <param name="returnType">Type of the return.</param>
-        /// <returns></returns>
-        /// <exception cref="ApplicationException">Data type not supported.  DataTypes currently suported are: DbTypeSupported.dbString, DbTypeSupported.dbInt32, DbTypeSupported.dbDouble, DbTypeSupported.dbDateTime, DbTypeSupported.dbChar</exception>
-        public override IDataParameter CreateOutputParameter(string parameterName, DbTypeSupported returnType)
-        {
-            MySqlDbType sqlDataType;
-            switch (returnType)
-            {
-                case DbTypeSupported.dbVarChar:
-                case DbTypeSupported.dbChar:
-                case DbTypeSupported.dbNVarChar:
-                    sqlDataType = MySqlDbType.VarChar;
-                    break;
-                case DbTypeSupported.dbTinyInt:
-                case DbTypeSupported.dbInt16:
-                    sqlDataType = MySqlDbType.Int16;
-                    break;
-                case DbTypeSupported.dbInt32:
-                    sqlDataType = MySqlDbType.Int32;
-                    break;
-                case DbTypeSupported.dbInt64:
-                    sqlDataType = MySqlDbType.Int64;
-                    break;
-                case DbTypeSupported.dbDouble:
-                    sqlDataType = MySqlDbType.Double;
-                    break;
-                case DbTypeSupported.dbDateTime:
-                    sqlDataType = MySqlDbType.DateTime;
-                    break;
-                case DbTypeSupported.dbBlob:
-                    sqlDataType = MySqlDbType.Blob;
-                    break;
-                case DbTypeSupported.dbDecimal:
-                    sqlDataType = MySqlDbType.Decimal;
-                    break;
-                case DbTypeSupported.dbBit:
-                    sqlDataType = MySqlDbType.Bool;
-                    break;
-                case DbTypeSupported.dbGUID:
-                    sqlDataType = MySqlDbType.Guid;
-                    break;
-                default:
-                    throw new ApplicationException($"Data type, [{returnType}], not supported.");
-            }
-
-            MySqlParameter returnParam = CreateDbServerParam(parameterName, sqlDataType);
-            returnParam.Direction = ParameterDirection.Output;
-            return returnParam;
-
         }
 
         /// <summary>
@@ -337,34 +429,44 @@ namespace CodedThought.Core.Data.MySql
                 case DbTypeSupported.dbNVarChar:
                     sqlDataType = MySqlDbType.VarChar;
                     break;
+
                 case DbTypeSupported.dbTinyInt:
                 case DbTypeSupported.dbInt16:
                     sqlDataType = MySqlDbType.Int16;
                     break;
+
                 case DbTypeSupported.dbInt32:
                     sqlDataType = MySqlDbType.Int32;
                     break;
+
                 case DbTypeSupported.dbInt64:
                     sqlDataType = MySqlDbType.Int64;
                     break;
+
                 case DbTypeSupported.dbDouble:
                     sqlDataType = MySqlDbType.Double;
                     break;
+
                 case DbTypeSupported.dbDateTime:
                     sqlDataType = MySqlDbType.DateTime;
                     break;
+
                 case DbTypeSupported.dbBlob:
                     sqlDataType = MySqlDbType.Blob;
                     break;
+
                 case DbTypeSupported.dbDecimal:
                     sqlDataType = MySqlDbType.Decimal;
                     break;
+
                 case DbTypeSupported.dbBit:
                     sqlDataType = MySqlDbType.Bool;
                     break;
+
                 case DbTypeSupported.dbGUID:
                     sqlDataType = MySqlDbType.Guid;
                     break;
+
                 default:
                     throw new ApplicationException($"Data type, [{returnType}], not supported.");
             }
@@ -380,92 +482,22 @@ namespace CodedThought.Core.Data.MySql
         /// <returns></returns>
         public override IDataParameter CreateStringParameter(string srcTableColumnName, string parameterValue)
         {
-
             IDataParameter returnValue = CreateDbServerParam(srcTableColumnName, MySqlDbType.VarChar);
             returnValue.Value = parameterValue != string.Empty ? parameterValue : DBNull.Value;
 
             return returnValue;
         }
 
-        /// <summary>Creates a Int32 parameter for the supported database</summary>
-        /// <param name="srcTableColumnName"></param>
-        /// <param name="parameterValue">    </param>
+        /// <summary>Creates the XML parameter.</summary>
+        /// <param name="srcTaleColumnName">Name of the SRC tale column.</param>
+        /// <param name="parameterValue">   The parameter value.</param>
         /// <returns></returns>
-        public override IDataParameter CreateInt32Parameter(string srcTableColumnName, int parameterValue)
-        {
-            IDataParameter returnValue = CreateDbServerParam(srcTableColumnName, MySqlDbType.Int32);
-            returnValue.Value = parameterValue != int.MinValue ? parameterValue : DBNull.Value;
-
-            return returnValue;
-        }
-
-        /// <summary>Creates a Double parameter based on supported database</summary>
-        /// <param name="srcTableColumnName"></param>
-        /// <param name="parameterValue">    </param>
-        /// <returns></returns>
-        public override IDataParameter CreateDoubleParameter(string srcTableColumnName, double parameterValue)
-        {
-            IDataParameter returnValue = CreateDbServerParam(srcTableColumnName, MySqlDbType.Double);
-            returnValue.Value = parameterValue != double.MinValue ? parameterValue : DBNull.Value;
-
-            return returnValue;
-        }
-
-        /// <summary>Create a data time parameter based on supported database.</summary>
-        /// <param name="srcTableColumnName"></param>
-        /// <param name="parameterValue">    </param>
-        /// <returns></returns>
-        public override IDataParameter CreateDateTimeParameter(string srcTableColumnName, DateTime parameterValue)
-        {
-            IDataParameter returnValue = CreateDbServerParam(srcTableColumnName, MySqlDbType.DateTime);
-            returnValue.Value = parameterValue != DateTime.MinValue ? parameterValue : DBNull.Value;
-
-            return returnValue;
-        }
-
-        /// <summary>Creates a Char parameter based on supported database.</summary>
-        /// <param name="srcTableColumnName"></param>
-        /// <param name="parameterValue">    </param>
-        /// <param name="size">              </param>
-        /// <returns></returns>
-        public override IDataParameter CreateCharParameter(string srcTableColumnName, string parameterValue, int size)
-        {
-            IDataParameter returnValue = CreateDbServerParam(srcTableColumnName, MySqlDbType.VarChar);
-            returnValue.Value = parameterValue != string.Empty ? parameterValue : DBNull.Value;
-
-            return returnValue;
-        }
-
-        /// <summary>Creates a Blob parameter based on supported database.</summary>
-        /// <param name="srcTableColumnName"></param>
-        /// <param name="parameterValue">    </param>
-        /// <param name="size">              </param>
-        /// <returns></returns>
-        public IDataParameter CreateBlobParameter(string srcTableColumnName, byte[] parameterValue, int size)
-        {
-            IDataParameter returnValue = CreateDbServerParam(srcTableColumnName, MySqlDbType.Blob, size);
-            returnValue.Value = parameterValue;
-
-            return returnValue;
-        }
-
-        /// <summary>Creates the GUID parameter.</summary>
-        /// <param name="srcTableColumnName">Name of the SRC table column.</param>
-        /// <param name="parameterValue">    The parameter value.</param>
-        /// <returns></returns>
-        public override IDataParameter CreateGuidParameter(string srcTableColumnName, Guid parameterValue)
-        {
-            IDataParameter returnValue = CreateDbServerParam(srcTableColumnName, MySqlDbType.Guid);
-            returnValue.Value = parameterValue;
-
-            return returnValue;
-        }
-
-        public override IDataParameter CreateBetweenParameter(string srcTableColumnName, BetweenParameter betweenParam) => throw new NotImplementedException();
+        public override IDataParameter CreateXMLParameter(string srcTaleColumnName, string parameterValue) => throw new NotImplementedException();
 
         #endregion Parameters
 
         #region Add method
+
         /// <summary>
         /// Adds data to the database
         /// </summary>
@@ -474,7 +506,7 @@ namespace CodedThought.Core.Data.MySql
         /// <param name="columns"></param>
         /// <param name="store"></param>
         /// <returns></returns>
-        /// 
+        ///
 
         public override void Add(string tableName, object obj, List<TableColumn> columns, IDBStore store)
         {
@@ -552,7 +584,6 @@ namespace CodedThought.Core.Data.MySql
             }
         }
 
-
         #endregion Add method
 
         #region Get method
@@ -590,10 +621,10 @@ namespace CodedThought.Core.Data.MySql
 
             return reader;
         }
+
         #endregion Get method
 
         #region Executing Queries
-
 
         //public override DataSet GetDataSet(string tableName, string schemaName, List<string> selectColumns, ParameterCollection parameters)
         //{
@@ -601,7 +632,6 @@ namespace CodedThought.Core.Data.MySql
         //    DefaultSchemaName = schemaName;
         //    try
         //    {
-
         //        StringBuilder sql = new("SELECT ");
         //        sql.Append(GenerateColumnList(selectColumns));
         //        if (DefaultSchemaName != string.Empty)
@@ -665,20 +695,19 @@ namespace CodedThought.Core.Data.MySql
         //        throw new Exceptions.CodedThoughtApplicationException(ex.Message + "[" + commandText + "]", ex);
         //    }
         //}
+
         #endregion Executing Queries
 
         #region GetValue Methods
 
-
-
         /// <summary>
         /// Get a BLOB from a TEXT or IMAGE column.
         /// In order to get BLOB, a IDataReader's CommandBehavior must be set to SequentialAccess.
-        /// That also means to Get columns in sequence is extremely important. 
+        /// That also means to Get columns in sequence is extremely important.
         /// Otherwise the GetBlobValue method won't return correct data.
         /// [EXAMPLE]
         /// this.DataReaderBehavior = CommandBehavior.SequentialAccess;
-        ///	using(IDataReader reader = this.ExecuteReader("select BigName, ID, BigBlob from BigTable", CommandType.Text)) 
+        ///	using(IDataReader reader = this.ExecuteReader("select BigName, ID, BigBlob from BigTable", CommandType.Text))
         ///	{
         ///		while (reader.Read())
         ///		{
@@ -693,10 +722,9 @@ namespace CodedThought.Core.Data.MySql
         /// <returns></returns>
         protected override byte[] GetBlobValue(IDataReader reader, string columnName)
         {
-
             int position = reader.GetOrdinal(columnName);
 
-            // The DataReader's CommandBehavior must be CommandBehavior.SequentialAccess. 
+            // The DataReader's CommandBehavior must be CommandBehavior.SequentialAccess.
             if (DataReaderBehavior != CommandBehavior.SequentialAccess)
             {
                 throw new ApplicationException("Please set the DataReaderBehavior to SequentialAccess to call this method.");
@@ -744,19 +772,13 @@ namespace CodedThought.Core.Data.MySql
 
         public override DBSupported SupportedDatabase => DBSupported.MySql;
 
-
         #region Schema Definition Queries
 
         /// <summary>
-        /// Gets the query used to list all tables in the database.
+        /// Gets the current session default schema name.
         /// </summary>
         /// <returns></returns>
-        public override string GetTableListQuery() => $"SELECT TABLE_NAME, TABLE_SCHEMA FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_SCHEMA = '{Connection.Database}' ORDER BY TABLE_NAME";
-        /// <summary>
-        /// Gets the query used to list all views in the database.
-        /// </summary>
-        /// <returns></returns>
-        public override string GetViewListQuery() => $"SELECT TABLE_NAME, TABLE_SCHEMA FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = '{Connection.Database}' ORDER BY TABLE_NAME";
+        public override String GetDefaultSessionSchemaNameQuery() => throw new NotImplementedException();
 
         /// <summary>
         /// Gets the table's column definition query.
@@ -795,6 +817,13 @@ namespace CodedThought.Core.Data.MySql
                 throw;
             }
         }
+
+        /// <summary>
+        /// Gets the query used to list all tables in the database.
+        /// </summary>
+        /// <returns></returns>
+        public override string GetTableListQuery() => $"SELECT TABLE_NAME, TABLE_SCHEMA FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_SCHEMA = '{Connection.Database}' ORDER BY TABLE_NAME";
+
         /// <summary>
         /// Gets the query necessary to get a view's high level schema.  This does not include the columns.
         /// </summary>
@@ -809,17 +838,15 @@ namespace CodedThought.Core.Data.MySql
             }
             catch (Exception)
             {
-
                 throw;
             }
         }
 
         /// <summary>
-        /// Gets the current session default schema name.
+        /// Gets the query used to list all views in the database.
         /// </summary>
         /// <returns></returns>
-        public override String GetDefaultSessionSchemaNameQuery() => throw new NotImplementedException();
-
+        public override string GetViewListQuery() => $"SELECT TABLE_NAME, TABLE_SCHEMA FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = '{Connection.Database}' ORDER BY TABLE_NAME";
 
         #endregion Schema Definition Queries
 
@@ -857,22 +884,7 @@ namespace CodedThought.Core.Data.MySql
             }
             catch { throw; }
         }
-        /// <summary>
-        /// Gets an enumerable list of <see cref="TableColumn"/> objects for the passed view.
-        /// </summary>
-        /// <param name="viewName"></param>
-        /// <returns></returns>
-        public override List<TableColumn> GetViewDefinition(string viewName)
-        {
-            try
-            {
-                return GetTableDefinition(viewName);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
+
         /// <summary>
         /// Gets an enumerable list of <see cref="TableSchema"/> objects unless tableName is passed to filter it.
         /// </summary>
@@ -917,6 +929,24 @@ namespace CodedThought.Core.Data.MySql
             }
             catch { throw; }
         }
+
+        /// <summary>
+        /// Gets an enumerable list of <see cref="TableColumn"/> objects for the passed view.
+        /// </summary>
+        /// <param name="viewName"></param>
+        /// <returns></returns>
+        public override List<TableColumn> GetViewDefinition(string viewName)
+        {
+            try
+            {
+                return GetTableDefinition(viewName);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
         /// <summary>
         /// Gets an enumerable list of <see cref="ViewSchema"/> objects unless viewName is passed to filter it.
         /// </summary>
@@ -926,7 +956,6 @@ namespace CodedThought.Core.Data.MySql
         {
             try
             {
-
                 List<ViewSchema> viewDefinitions = [];
                 DataTable dtTables = ExecuteDataTable(GetViewListQuery());
                 foreach (DataRow row in dtTables.Rows)
@@ -961,113 +990,12 @@ namespace CodedThought.Core.Data.MySql
             }
             catch (Exception)
             {
-
                 throw;
             }
         }
 
         #endregion Schema Methods
 
-
-        public override string GetTableName(string defaultSchema, string tableName)
-        {
-
-            if (!String.IsNullOrEmpty(defaultSchema))
-            {
-                return $"{defaultSchema}.{tableName}";
-            }
-            else
-            {
-                return tableName;
-            }
-
-        }
-        public override string GetSchemaName() => !String.IsNullOrEmpty(DefaultSchemaName) ? DefaultSchemaName : String.Empty;
-
-        /// <summary>
-        /// Gets SQL syntax of Year
-        /// </summary>
-        /// <param name="dateString"></param>
-        /// <returns></returns>
-        public override string GetYearSQLSyntax(string dateString) => "FORMAT(#" + dateString + "#, \"yyyy\")";
-        /// <summary>
-        /// Gets database function name
-        /// </summary>
-        /// <param name="functionName"></param>
-        /// <returns></returns>
-        public override string GetFunctionName(FunctionName functionName)
-        {
-            string retStr = string.Empty;
-            switch (functionName)
-            {
-                case FunctionName.SUBSTRING:
-                    retStr = "LEFT";
-                    break;
-                case FunctionName.ISNULL:
-                    retStr = "ISNULL";
-                    break;
-                case FunctionName.CURRENTDATE:
-                    retStr = "NOW()";
-                    break;
-                case FunctionName.CONCATENATE:
-                    retStr = "&";
-                    break;
-            }
-            return retStr;
-        }
-
-        /// <summary>
-        /// Gets Date string format.
-        /// </summary>
-        /// <param name="columnName">Name of the column.</param>
-        /// <param name="dateFormat">The date format.</param>
-        /// <returns></returns>
-        public override string GetDateToStringForColumn(string columnName, DateFormat dateFormat)
-        {
-            StringBuilder sb = new StringBuilder();
-            switch (dateFormat)
-            {
-                case DateFormat.MMDDYYYY:
-                    sb.Append(" FORMAT(").Append(columnName).Append(", \"mm/dd/yyyy\") ");
-                    break;
-                case DateFormat.MMDDYYYY_Hyphen:
-                    sb.Append(" FORMAT(").Append(columnName).Append(", \"mm-dd-yyyy\") ");
-                    break;
-                case DateFormat.MonDDYYYY:
-                    sb.Append(" FORMAT(").Append(columnName).Append(", \"mmm d yyyy\") ");
-                    break;
-                default:
-                    sb.Append(columnName);
-                    break;
-            }
-            return sb.ToString();
-        }
-        /// <summary>
-        /// Gets the date to string for value.
-        /// </summary>
-        /// <param name="value">The value.</param>
-        /// <param name="dateFormat">The date format.</param>
-        /// <returns></returns>
-        public override string GetDateToStringForValue(string value, DateFormat dateFormat)
-        {
-            StringBuilder sb = new();
-            switch (dateFormat)
-            {
-                case DateFormat.MMDDYYYY:
-                    sb.Append(" FORMAT(\"").Append(value).Append("\", \"mm/dd/yyyy\") ");
-                    break;
-                case DateFormat.MMDDYYYY_Hyphen:
-                    sb.Append(" FORMAT(\"").Append(value).Append("\", \"mm-dd-yyyy\") ");
-                    break;
-                case DateFormat.MonDDYYYY:
-                    sb.Append(" FORMAT(\"").Append(value).Append("\", \"mmm d yyyy\") ");
-                    break;
-                default:
-                    sb.Append(value);
-                    break;
-            }
-            return sb.ToString();
-        }
         /// <summary>
         /// Get CASE (SQL Server) or DECODE (Oracle) SQL syntax.
         /// </summary>
@@ -1089,6 +1017,134 @@ namespace CodedThought.Core.Data.MySql
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Get a function name that return current date
+        /// </summary>
+        /// <returns></returns>
+        public override string GetCurrentDateFunction() => "Now()";
+
+        /// <summary>
+        /// Get a database specific date only SQL syntax.
+        /// </summary>
+        /// <param name="dateColumn"></param>
+        /// <returns></returns>
+        public override string GetDateOnlySqlSyntax(string dateColumn) => "CSTR(" + dateColumn + ")";
+
+        /// <summary>
+        /// Gets  date part(Day, month or year) of date
+        /// </summary>
+        /// <param name="datestring"></param>
+        /// <param name="dateFormat"></param>
+        /// <param name="datePart"></param>
+        /// <returns></returns>
+        public override string GetDatePart(string datestring, DateFormat dateFormat, DatePart datePart)
+        {
+            string datePartstring = string.Empty;
+            switch (datePart)
+            {
+                case DatePart.DAY:
+                    datePartstring = $"DAY({datestring})";
+                    break;
+
+                case DatePart.MONTH:
+                    datePartstring = $"MONTH({datestring})";
+                    break;
+
+                case DatePart.YEAR:
+                    datePartstring = $"YEAR({datestring})";
+                    break;
+            }
+            return datePartstring;
+        }
+
+        /// <summary>
+        /// Gets Date string format.
+        /// </summary>
+        /// <param name="columnName">Name of the column.</param>
+        /// <param name="dateFormat">The date format.</param>
+        /// <returns></returns>
+        public override string GetDateToStringForColumn(string columnName, DateFormat dateFormat)
+        {
+            StringBuilder sb = new StringBuilder();
+            switch (dateFormat)
+            {
+                case DateFormat.MMDDYYYY:
+                    sb.Append(" FORMAT(").Append(columnName).Append(", \"mm/dd/yyyy\") ");
+                    break;
+
+                case DateFormat.MMDDYYYY_Hyphen:
+                    sb.Append(" FORMAT(").Append(columnName).Append(", \"mm-dd-yyyy\") ");
+                    break;
+
+                case DateFormat.MonDDYYYY:
+                    sb.Append(" FORMAT(").Append(columnName).Append(", \"mmm d yyyy\") ");
+                    break;
+
+                default:
+                    sb.Append(columnName);
+                    break;
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Gets the date to string for value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="dateFormat">The date format.</param>
+        /// <returns></returns>
+        public override string GetDateToStringForValue(string value, DateFormat dateFormat)
+        {
+            StringBuilder sb = new();
+            switch (dateFormat)
+            {
+                case DateFormat.MMDDYYYY:
+                    sb.Append(" FORMAT(\"").Append(value).Append("\", \"mm/dd/yyyy\") ");
+                    break;
+
+                case DateFormat.MMDDYYYY_Hyphen:
+                    sb.Append(" FORMAT(\"").Append(value).Append("\", \"mm-dd-yyyy\") ");
+                    break;
+
+                case DateFormat.MonDDYYYY:
+                    sb.Append(" FORMAT(\"").Append(value).Append("\", \"mmm d yyyy\") ");
+                    break;
+
+                default:
+                    sb.Append(value);
+                    break;
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Gets database function name
+        /// </summary>
+        /// <param name="functionName"></param>
+        /// <returns></returns>
+        public override string GetFunctionName(FunctionName functionName)
+        {
+            string retStr = string.Empty;
+            switch (functionName)
+            {
+                case FunctionName.SUBSTRING:
+                    retStr = "LEFT";
+                    break;
+
+                case FunctionName.ISNULL:
+                    retStr = "ISNULL";
+                    break;
+
+                case FunctionName.CURRENTDATE:
+                    retStr = "NOW()";
+                    break;
+
+                case FunctionName.CONCATENATE:
+                    retStr = "&";
+                    break;
+            }
+            return retStr;
+        }
 
         /// <summary>
         /// Get an IsNull (SQLServer) or NVL (Oracle)
@@ -1104,18 +1160,7 @@ namespace CodedThought.Core.Data.MySql
         /// <returns></returns>
         public override string GetIfNullFunction() => "isnull";
 
-        /// <summary>
-        /// Get a function name that return current date
-        /// </summary>
-        /// <returns></returns>
-        public override string GetCurrentDateFunction() => "Now()";
-
-        /// <summary>
-        /// Get a database specific date only SQL syntax.
-        /// </summary>
-        /// <param name="dateColumn"></param>
-        /// <returns></returns>
-        public override string GetDateOnlySqlSyntax(string dateColumn) => "CSTR(" + dateColumn + ")";
+        public override string GetSchemaName() => !String.IsNullOrEmpty(DefaultSchemaName) ? DefaultSchemaName : String.Empty;
 
         /// <summary>
         /// Get a database specific syntax that converts string to date.
@@ -1135,83 +1180,33 @@ namespace CodedThought.Core.Data.MySql
         /// <returns></returns>
         public override string GetStringToDateSqlSyntax(DateTime dateSQL) => "#" + dateSQL.ToString("G", System.Globalization.DateTimeFormatInfo.InvariantInfo) + "# ";
 
-
-        /// <summary>
-        /// Gets  date part(Day, month or year) of date
-        /// </summary>
-        /// <param name="datestring"></param>
-        /// <param name="dateFormat"></param>
-        /// <param name="datePart"></param>
-        /// <returns></returns>
-        public override string GetDatePart(string datestring, DateFormat dateFormat, DatePart datePart)
+        public override string GetTableName(string defaultSchema, string tableName)
         {
-            string datePartstring = string.Empty;
-            switch (datePart)
+            if (!String.IsNullOrEmpty(defaultSchema))
             {
-                case DatePart.DAY:
-                    datePartstring = $"DAY({datestring})";
-                    break;
-                case DatePart.MONTH:
-                    datePartstring = $"MONTH({datestring})";
-                    break;
-                case DatePart.YEAR:
-                    datePartstring = $"YEAR({datestring})";
-                    break;
+                return $"{defaultSchema}.{tableName}";
             }
-            return datePartstring;
+            else
+            {
+                return tableName;
+            }
         }
 
         /// <summary>
-        /// Convert a datestring to datetime when used for between.... and 
+        /// Gets SQL syntax of Year
+        /// </summary>
+        /// <param name="dateString"></param>
+        /// <returns></returns>
+        public override string GetYearSQLSyntax(string dateString) => "FORMAT(#" + dateString + "#, \"yyyy\")";
+
+        /// <summary>
+        /// Convert a datestring to datetime when used for between.... and
         /// </summary>
         /// <param name="datestring">string</param>
         /// <param name="dateFormat">DatabaseObject.DateFormat</param>
         /// <returns></returns>
         public override string ToDate(string datestring, DateFormat dateFormat) => __singleQuote + datestring + __singleQuote;
-        /// <summary>
-        /// Converts a database type name to a system type.
-        /// </summary>
-        /// <param name="dbTypeName">Name of the db type.</param>
-        /// <returns>
-        /// System.Type
-        /// </returns>
-        /// <exception cref="System.NotImplementedException"></exception>
-        public override Type ToSystemType(string mySqlType)
-        {
 
-            Dictionary<string, Type> typeMap = new Dictionary<string, Type>()
-        {
-            { "varchar", typeof(string) },
-            { "char", typeof(string) },
-            { "text", typeof(string) },
-            { "longtext", typeof(string) },
-            { "int", typeof(int) },
-            { "bigint", typeof(long) },
-            { "smallint", typeof(short) },
-            { "tinyint", typeof(byte) },
-            { "bit", typeof(Boolean) },
-            { "mediumint", typeof(int) }, // Mapping to int in SQL Server
-            { "float", typeof(double) },
-            { "double", typeof(double) },
-            { "decimal", typeof(decimal) },
-            { "date", typeof(DateTime) },
-            { "datetime", typeof(DateTime) },
-            { "timestamp", typeof(DateTime) }, // Mapping to datetime in SQL Server
-            { "time", typeof(TimeSpan) },
-            { "year", typeof(short) }, // Mapping to smallint in SQL Server
-            {"guid", typeof(Guid) }
-            // Add more mappings as needed
-        };
-
-            if (typeMap.ContainsKey(mySqlType.ToLower()))
-            {
-                return typeMap[mySqlType.ToLower()];
-            }
-            else
-            {
-                throw new ArgumentException($"MySQL data type, {mySqlType}, not supported or recognized.");
-            }
-        }
         /// <summary>
         /// Converts a database type name to a <see cref="DbTypeSupported"/> type.
         /// </summary>
@@ -1252,9 +1247,55 @@ namespace CodedThought.Core.Data.MySql
             }
         }
 
-        #endregion
+        /// <summary>
+        /// Converts a database type name to a system type.
+        /// </summary>
+        /// <param name="dbTypeName">Name of the db type.</param>
+        /// <returns>
+        /// System.Type
+        /// </returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public override Type ToSystemType(string mySqlType)
+        {
+            Dictionary<string, Type> typeMap = new Dictionary<string, Type>()
+            {
+                { "char", typeof(string) },
+                { "varchar", typeof(string) },
+                { "text", typeof(string) },
+                { "blob", typeof(string) },
+                { "longblob", typeof(string) },
+                { "longtext", typeof(string) },
+                { "mediumblob", typeof(string) },
+                { "mediumtext", typeof(string) },
+                { "int", typeof(int) },
+                { "tinyint", typeof(byte) },
+                { "smallint", typeof(short) },
+                { "mediumint", typeof(int) }, // Mapping to int in SQL Server
+                { "bigint", typeof(long) },
+                { "float", typeof(double) },
+                { "double", typeof(double) },
+                { "decimal", typeof(decimal) },
+                { "bit", typeof(Boolean) },
+                { "date", typeof(DateTime) },
+                { "datetime", typeof(DateTime) },
+                { "timestamp", typeof(DateTime) }, // Mapping to datetime in SQL Server
+                { "time", typeof(TimeSpan) },
+                { "year", typeof(short) }, // Mapping to smallint in SQL Server
+                { "guid", typeof(Guid) }
+                // Add more mappings as needed
+            };
 
+            if (typeMap.ContainsKey(mySqlType.ToLower()))
+            {
+                return typeMap[mySqlType.ToLower()];
+            }
+            else
+            {
+                throw new ArgumentException($"MySQL data type, {mySqlType}, not supported or recognized.");
+            }
+        }
 
+        #endregion Database Specific
 
         #endregion Other Override Methods
     }
