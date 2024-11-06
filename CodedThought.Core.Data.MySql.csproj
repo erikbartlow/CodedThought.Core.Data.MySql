@@ -4,10 +4,10 @@
 	<TargetFramework>net8.0</TargetFramework>
 	<ImplicitUsings>enable</ImplicitUsings>
 	<Nullable>enable</Nullable>
-	<AssemblyVersion>1.0.10.0</AssemblyVersion>
-	<FileVersion>1.0.10.0</FileVersion>
-	<VersionPrefix>1.0.10.0</VersionPrefix>
-	<Version>1.0.0-beta-10</Version>
+	<AssemblyVersion>1.0.10.2</AssemblyVersion>
+	<FileVersion>1.0.10.2</FileVersion>
+	<VersionPrefix>1.0.10.2</VersionPrefix>
+	<Version>1.0.0-beta-12</Version>
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	<Title>CodedThought.Core.Data.MySql</Title>
 	<Authors>Erik Bartlow</Authors>
@@ -33,10 +33,23 @@
     <PackageReference Include="MySqlConnector.DependencyInjection" Version="2.3.6" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\CodedThought.Core\CodedThought.Core\CodedThought.Core.csproj" />
-  </ItemGroup>
+  <Choose>
+	<When Condition="'$(Configuration)' == 'Release'">
+	  <ItemGroup>
+		<PackageReference Include="CodedThought.Core" Version="8.0.1.2" />
+		<PackageReference Include="CodedThought.Core.Configuration" Version="8.0.1" />
+	  </ItemGroup>
+	</When>
+  </Choose>
 
+  <Choose>
+	<When Condition="'$(Configuration)' == 'Debug'">
+	  <ItemGroup>
+		<ProjectReference Include="..\CodedThought.Core\CodedThought.Core\CodedThought.Core.csproj" />
+		<ProjectReference Include="..\CodedThought.Core\CodedThought.Core.Configuration\CodedThought.Core.Configuration.csproj" />
+	  </ItemGroup>
+	</When>
+  </Choose>
   <ItemGroup>
 	<None Update="LICENSE" Pack="true" PackagePath="" />
 	<None Update="README.md" Pack="true" PackagePath="" />
