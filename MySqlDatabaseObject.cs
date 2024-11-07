@@ -1227,7 +1227,7 @@ namespace CodedThought.Core.Data.MySql
                 { "mediumblob", DbTypeSupported.dbImage },
                 { "int", DbTypeSupported.dbInt32 },
                 { "smallint", DbTypeSupported.dbInt16 },
-                { "tinyint", DbTypeSupported.dbInt16 },
+                { "tinyint", DbTypeSupported.dbTinyInt },
                 { "bit", DbTypeSupported.dbBit },
                 { "mediumint", DbTypeSupported.dbInt32 }, // Mapping to int in SQL Server
                 { "bigint", DbTypeSupported.dbInt64 },
