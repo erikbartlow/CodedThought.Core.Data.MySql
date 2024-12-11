@@ -4,10 +4,10 @@
 	<TargetFramework>net8.0</TargetFramework>
 	<ImplicitUsings>enable</ImplicitUsings>
 	<Nullable>enable</Nullable>
-	<AssemblyVersion>1.0.10.3</AssemblyVersion>
-	<FileVersion>1.0.10.3</FileVersion>
-	<VersionPrefix>1.0.10.3</VersionPrefix>
-	<Version>1.0.0-beta-13</Version>
+	<AssemblyVersion>1.0.10.5</AssemblyVersion>
+	<FileVersion>1.0.10.5</FileVersion>
+	<VersionPrefix>1.0.10.5</VersionPrefix>
+	<Version>1.0.0-beta-15</Version>
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	<Title>CodedThought.Core.Data.MySql</Title>
 	<Authors>Erik Bartlow</Authors>
@@ -24,19 +24,20 @@
 	<IncludeReferencedProjects>true</IncludeReferencedProjects>
 	<AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
 	<PublishRepositoryUrl>true</PublishRepositoryUrl>
+	<PackageReleaseNotes>Minor update to GetTableDefinition(s) and GetViewDefinition(s) to set the MaxLength with an Int64/long type.</PackageReleaseNotes>
 	<Copyright>Copyright (c) 2024, Erik Bartlow, All Rights Reserved</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
 	<PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
-	<PackageReference Include="MySqlConnector" Version="2.3.7" />
-    <PackageReference Include="MySqlConnector.DependencyInjection" Version="2.3.6" />
+	<PackageReference Include="MySqlConnector" Version="2.4.0" />
+    <PackageReference Include="MySqlConnector.DependencyInjection" Version="2.4.0" />
   </ItemGroup>
 
   <Choose>
 	<When Condition="'$(Configuration)' == 'Release'">
 	  <ItemGroup>
-		<PackageReference Include="CodedThought.Core" Version="8.0.1.6" />
+		<PackageReference Include="CodedThought.Core" Version="8.0.1.22" />
 		<PackageReference Include="CodedThought.Core.Configuration" Version="8.0.1" />
 	  </ItemGroup>
 	</When>

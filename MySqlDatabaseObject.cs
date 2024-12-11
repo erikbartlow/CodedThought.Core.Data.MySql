@@ -40,9 +40,10 @@ namespace CodedThought.Core.Data.MySql
         {
             try
             {
-                _connection = new MySqlConnection(ConnectionString);
-                _connection.Open();
-
+                if (string.IsNullOrEmpty(_connection.ConnectionString))
+                    _connection = new(ConnectionString);
+                if(_connection.State != ConnectionState.Open)
+                    _connection.Open();
                 return _connection;
             }
             catch (MySqlException ex)
@@ -69,7 +70,22 @@ namespace CodedThought.Core.Data.MySql
                 throw new ApplicationException("Could not open Connection.  Check connection string" + "/r/n" + ex.Message + "/r/n" + ex.StackTrace, ex);
             }
         }
-
+        /// <summary>
+        /// Tests the connection to the database.
+        /// </summary>
+        /// <returns></returns>
+        public override bool TestConnection()
+        {
+            try
+            {
+                OpenConnection();
+                return Connection.State == ConnectionState.Open;
+            }
+            catch (CodedThoughtException)
+            {
+                throw;
+            }
+        }
         /// <summary>
         /// Commits updates and inserts.  This is only for Oracle database operations.
         /// </summary>
@@ -96,23 +112,6 @@ namespace CodedThought.Core.Data.MySql
         /// <summary>Creates the parameter collection.</summary>
         /// <returns></returns>
         public override ParameterCollection CreateParameterCollection() => new(this);
-
-        /// <summary>
-        /// Tests the connection to the database.
-        /// </summary>
-        /// <returns></returns>
-        public override bool TestConnection()
-        {
-            try
-            {
-                OpenConnection();
-                return Connection.State == ConnectionState.Open;
-            }
-            catch (CodedThoughtException)
-            {
-                throw;
-            }
-        }
 
         /// <summary>
         /// Test the connection using an asyncronous process.
@@ -872,7 +871,7 @@ namespace CodedThought.Core.Data.MySql
                         IsNullable = Convert.ToBoolean(row["IS_NULLABLE"]),
                         SystemType = ToSystemType(row["DATA_TYPE"].ToString()),
                         Type = ToDbSupportedType(row["DATA_TYPE"].ToString()),
-                        MaxLength = Convert.ToInt32(row["CHARACTER_MAXIMUM_LENGTH"]),
+                        MaxLength = Convert.ToInt64(row["CHARACTER_MAXIMUM_LENGTH"]),
                         IsIdentity = Convert.ToBoolean(row["IS_IDENTITY"]),
                         IsPrimary = Convert.ToBoolean(row["IS_PRIMARY_KEY"]),
                         OrdinalPosition = Convert.ToInt32(row["ORDINAL_POSITION"])
@@ -975,7 +974,7 @@ namespace CodedThought.Core.Data.MySql
                             IsNullable = Convert.ToBoolean(col["IS_NULLABLE"]),
                             SystemType = ToSystemType(col["DATA_TYPE"].ToString()),
                             Type = ToDbSupportedType(col["DATA_TYPE"].ToString()),
-                            MaxLength = Convert.ToInt32(col["CHARACTER_MAXIMUM_LENGTH"]),
+                            MaxLength = Convert.ToInt64(col["CHARACTER_MAXIMUM_LENGTH"]),
                             IsIdentity = Convert.ToBoolean(col["IS_IDENTITY"]),
                             IsPrimary = Convert.ToBoolean(col["IS_PRIMARY_KEY"]),
                             OrdinalPosition = Convert.ToInt32(col["ORDINAL_POSITION"])
