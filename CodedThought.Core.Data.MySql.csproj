@@ -4,10 +4,10 @@
 	<TargetFramework>net8.0</TargetFramework>
 	<ImplicitUsings>enable</ImplicitUsings>
 	<Nullable>enable</Nullable>
-	<AssemblyVersion>1.0.10.5</AssemblyVersion>
-	<FileVersion>1.0.10.5</FileVersion>
-	<VersionPrefix>1.0.10.5</VersionPrefix>
-	<Version>1.0.0-beta-15</Version>
+	<AssemblyVersion>1.0.10.6</AssemblyVersion>
+	<FileVersion>1.0.10.6</FileVersion>
+	<VersionPrefix>1.0.10.6</VersionPrefix>
+	<Version>1.0.0-beta-16</Version>
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	<Title>CodedThought.Core.Data.MySql</Title>
 	<Authors>Erik Bartlow</Authors>
@@ -24,8 +24,8 @@
 	<IncludeReferencedProjects>true</IncludeReferencedProjects>
 	<AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
 	<PublishRepositoryUrl>true</PublishRepositoryUrl>
-	<PackageReleaseNotes>Minor update to GetTableDefinition(s) and GetViewDefinition(s) to set the MaxLength with an Int64/long type.</PackageReleaseNotes>
-	<Copyright>Copyright (c) 2024, Erik Bartlow, All Rights Reserved</Copyright>
+	<PackageReleaseNotes>Updated to support the latest CodedThought.Core update to support any data type for primary keys and handle GUIDs.</PackageReleaseNotes>
+	<Copyright>Copyright (c) 2025, Erik Bartlow, All Rights Reserved</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
@@ -37,7 +37,7 @@
   <Choose>
 	<When Condition="'$(Configuration)' == 'Release'">
 	  <ItemGroup>
-		<PackageReference Include="CodedThought.Core" Version="8.0.1.22" />
+		<PackageReference Include="CodedThought.Core" Version="8.0.1.26" />
 		<PackageReference Include="CodedThought.Core.Configuration" Version="8.0.1" />
 	  </ItemGroup>
 	</When>
@@ -46,7 +46,7 @@
   <Choose>
 	<When Condition="'$(Configuration)' == 'Debug'">
 	  <ItemGroup>
-		<ProjectReference Include="..\CodedThought.Core\CodedThought.Core.Configuration\CodedThought.Core.Configuration.csproj" />
+		<ProjectReference Include="..\CodedThought.Core\CodedThought.Core\CodedThought.Core.csproj" />
 	  </ItemGroup>
 	</When>
   </Choose>

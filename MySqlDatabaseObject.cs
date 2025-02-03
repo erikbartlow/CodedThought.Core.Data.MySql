@@ -42,7 +42,7 @@ namespace CodedThought.Core.Data.MySql
             {
                 if (string.IsNullOrEmpty(_connection.ConnectionString))
                     _connection = new(ConnectionString);
-                if(_connection.State != ConnectionState.Open)
+                if (_connection.State != ConnectionState.Open)
                     _connection.Open();
                 return _connection;
             }
@@ -333,10 +333,10 @@ namespace CodedThought.Core.Data.MySql
         /// <returns></returns>
         public override IDataParameter CreateParameter(object obj, TableColumn col, IDBStore store)
         {
-            Boolean isNull;
-            int sqlDataType;
-
             object extractedData = store.Extract(obj, col.Name);
+
+            bool isNull;
+            int sqlDataType;
             try
             {
                 switch (col.Type)
@@ -344,33 +344,33 @@ namespace CodedThought.Core.Data.MySql
                     case DbTypeSupported.dbChar:
                     case DbTypeSupported.dbVarChar:
                     case DbTypeSupported.dbNVarChar:
-                        isNull = extractedData == null || (string) extractedData == "";
+                        isNull = (col.IsNullableType && extractedData == null) || extractedData == null || (string) extractedData == "";
                         sqlDataType = (int) MySqlDbType.VarChar;
                         break;
 
                     case DbTypeSupported.dbTinyInt:
                     case DbTypeSupported.dbInt16:
-                        isNull = (Int16) extractedData == Int16.MinValue;
+                        isNull = (col.IsNullableType && extractedData == null) || (Int16) extractedData == Int16.MinValue;
                         sqlDataType = (int) MySqlDbType.Int16;
                         break;
 
                     case DbTypeSupported.dbInt32:
-                        isNull = (Int32) extractedData == Int32.MinValue;
+                        isNull = (col.IsNullableType && extractedData == null) || (Int32) extractedData == Int32.MinValue;
                         sqlDataType = (int) MySqlDbType.Int32;
                         break;
 
                     case DbTypeSupported.dbInt64:
-                        isNull = (Int64) extractedData == Int64.MinValue;
+                        isNull = (col.IsNullableType && extractedData == null) || (Int64) extractedData == Int64.MinValue;
                         sqlDataType = (int) MySqlDbType.Int64;
                         break;
 
                     case DbTypeSupported.dbDouble:
-                        isNull = (double) extractedData == double.MinValue;
+                        isNull = (col.IsNullableType && extractedData == null) || (double) extractedData == double.MinValue;
                         sqlDataType = (int) MySqlDbType.Double;
                         break;
 
                     case DbTypeSupported.dbDateTime:
-                        isNull = (DateTime) extractedData == DateTime.MinValue;
+                        isNull = (col.IsNullableType && extractedData == null) || (DateTime) extractedData == DateTime.MinValue;
                         sqlDataType = (int) MySqlDbType.DateTime;
                         break;
 
@@ -381,33 +381,33 @@ namespace CodedThought.Core.Data.MySql
                         break;
 
                     case DbTypeSupported.dbDecimal:
-                        isNull = (decimal) extractedData == decimal.MinValue;
+                        isNull = (col.IsNullableType && extractedData == null) || (decimal) extractedData == decimal.MinValue;
                         sqlDataType = (int) MySqlDbType.Decimal;
                         break;
 
                     case DbTypeSupported.dbBit:
-                        isNull = extractedData == null;
+                        isNull = (col.IsNullableType && extractedData == null) || extractedData == null;
                         sqlDataType = (int) MySqlDbType.Bool;
                         break;
 
                     case DbTypeSupported.dbGUID:
-                        isNull = extractedData == null;
+                        isNull = (col.IsNullableType && extractedData == null) || (Guid) extractedData == Guid.Empty;
                         sqlDataType = (int) MySqlDbType.Guid;
+                        if (col.IsPrimary && isNull)
+                            extractedData = Guid.NewGuid().ToString();
                         break;
 
                     default:
-                        throw new ApplicationException($"Data type, [{col.Type}], not supported.");
+                        throw new CodedThoughtApplicationException($"Data type, {col.Type}, not supported.");
                 }
             }
             catch (Exception ex)
             {
-                throw new ApplicationException("Error creating Parameter", ex);
+                throw new CodedThoughtApplicationException("Error creating Parameter", ex);
             }
 
             MySqlParameter parameter = CreateDbServerParam(col.Name, (MySqlDbType) sqlDataType);
-
             parameter.Value = isNull ? DBNull.Value : extractedData;
-
             return parameter;
         }
 
@@ -514,11 +514,14 @@ namespace CodedThought.Core.Data.MySql
                 ParameterCollection parameters = [];
                 StringBuilder sbColumns = new();
                 StringBuilder sbValues = new();
+                TableColumn? keyColumn = null;
                 string sourceName = DefaultSchemaName;
 
                 for (int i = 0; i < columns.Count; i++)
                 {
                     TableColumn col = columns[i];
+                    if (col.IsPrimary)
+                        keyColumn = col;
 
                     if (col.IsInsertable)
                     {
@@ -547,17 +550,22 @@ namespace CodedThought.Core.Data.MySql
                 //Check if we have an identity Column
                 if (store.HasKeyColumn(obj))
                 {
-                    if (store.GetPrimaryKeyColumnAttribute(obj).IsIdentity)
+                    // Check if we have an auto numbering/identity column
+                    if (keyColumn.IsIdentity)
                     {
                         sql.Append("SELECT LAST_INSERT_ID(); ");
                         // ExecuteScalar will execute both the INSERT statement and the SELECT statement.
-                        int retVal = System.Convert.ToInt32(ExecuteScalar(sql.ToString(), System.Data.CommandType.Text, parameters));
+                        int retVal = Convert.ToInt32(ExecuteScalar(sql.ToString(), CommandType.Text, parameters));
                         store.SetPrimaryKey(obj, retVal);
+                    }
+                    else
+                    {
+                        ExecuteNonQuery(sql.ToString(), CommandType.Text, parameters);
                     }
                 }
                 else
                 {
-                    ExecuteNonQuery(sql.ToString(), System.Data.CommandType.Text, parameters);
+                    ExecuteNonQuery(sql.ToString(), CommandType.Text, parameters);
                 }
 
                 // this is the way to get the CONTEXT_INFO of a SQL connection session
@@ -748,7 +756,7 @@ namespace CodedThought.Core.Data.MySql
             {
                 // Reposition the start index to the end of the last buffer and fill the buffer.
                 startIndex += bufferSize;
-                retval = sqlReader.GetBytes(position, startIndex, outBytes, System.Convert.ToInt32(startIndex), bufferSize);
+                retval = sqlReader.GetBytes(position, startIndex, outBytes, Convert.ToInt32(startIndex), bufferSize);
             }
 
             return outBytes;
@@ -761,7 +769,7 @@ namespace CodedThought.Core.Data.MySql
         /// <param name="reader"></param>
         ///<param name="columnName"></param>
         /// <returns></returns>
-        public override string GetStringFromBlob(IDataReader reader, string columnName) => System.Text.Encoding.ASCII.GetString(GetBlobValue(reader, columnName));
+        public override string GetStringFromBlob(IDataReader reader, string columnName) => Encoding.ASCII.GetString(GetBlobValue(reader, columnName));
 
         #endregion GetValue Methods
 
