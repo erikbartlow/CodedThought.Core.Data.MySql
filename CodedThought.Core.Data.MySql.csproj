@@ -4,10 +4,10 @@
 	<TargetFramework>net8.0</TargetFramework>
 	<ImplicitUsings>enable</ImplicitUsings>
 	<Nullable>enable</Nullable>
-	<AssemblyVersion>1.0.10.7</AssemblyVersion>
-	<FileVersion>1.0.10.7</FileVersion>
-	<VersionPrefix>1.0.10.7</VersionPrefix>
-	<Version>1.0.0-beta-17</Version>
+	<AssemblyVersion>1.0.10.8</AssemblyVersion>
+	<FileVersion>1.0.10.8</FileVersion>
+	<VersionPrefix>1.0.10.8</VersionPrefix>
+	<Version>1.0.0-beta-18</Version>
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	<Title>CodedThought.Core.Data.MySql</Title>
 	<Authors>Erik Bartlow</Authors>
@@ -24,12 +24,12 @@
 	<IncludeReferencedProjects>true</IncludeReferencedProjects>
 	<AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
 	<PublishRepositoryUrl>true</PublishRepositoryUrl>
-	<PackageReleaseNotes>Updated to support the latest CodedThought.Core update to support any data type for primary keys and handle GUIDs.</PackageReleaseNotes>
-	<Copyright>Copyright (c) 2025, Erik Bartlow, All Rights Reserved</Copyright>
+	<PackageReleaseNotes>Updated component to use the latest CodedThought.Core library (8.0.1.38) which included the addition of a new more granular Add method that will allow passing in a specific schema name.</PackageReleaseNotes>
+	<Copyright>Copyright (c) 2025, CodedThought, LLC, All Rights Reserved</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
-	<PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" />
+	<PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
 	<PackageReference Include="MySqlConnector" Version="2.4.0" />
     <PackageReference Include="MySqlConnector.DependencyInjection" Version="2.4.0" />
   </ItemGroup>
@@ -37,8 +37,8 @@
   <Choose>
 	<When Condition="'$(Configuration)' == 'Release'">
 	  <ItemGroup>
-		<PackageReference Include="CodedThought.Core" Version="8.0.1.30" />
-		<PackageReference Include="CodedThought.Core.Configuration" Version="8.0.1" />
+		<PackageReference Include="CodedThought.Core" Version="8.0.1.38" />
+		<PackageReference Include="CodedThought.Core.Configuration" Version="8.0.1.1" />
 	  </ItemGroup>
 	</When>
   </Choose>

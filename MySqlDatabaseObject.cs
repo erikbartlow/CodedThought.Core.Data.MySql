@@ -498,33 +498,35 @@ namespace CodedThought.Core.Data.MySql
         #region Add method
 
         /// <summary>
-        /// Adds data to the database
+        /// Inserts a new record into the specified database table.
         /// </summary>
-        /// <param name="tableName"></param>
-        /// <param name="obj"></param>
-        /// <param name="columns"></param>
-        /// <param name="store"></param>
-        /// <returns></returns>
-        ///
-
-        public override void Add(string tableName, object obj, List<TableColumn> columns, IDBStore store)
-        {
-            try
-            {
+        /// <remarks>This method constructs an SQL INSERT statement dynamically based on the provided
+        /// table name, schema name, and columns. If the table has an identity column, the method retrieves the
+        /// generated identity value and assigns it to the primary key property of the object.</remarks>
+        /// <param name="tableName">The name of the table where the record will be inserted.</param>
+        /// <param name="schemaName">The schema name of the table. If null or empty, the default schema is used.</param>
+        /// <param name="obj">The object containing the data to be inserted. The object's properties should match the table's columns.</param>
+        /// <param name="columns">A list of <see cref="TableColumn"/> objects representing the columns of the table. Only columns marked as
+        /// insertable will be included in the operation.</param>
+        /// <param name="store">An instance of <see cref="IDBStore"/> used to manage database operations and set the primary key for the
+        /// inserted object, if applicable.</param>
+        /// <exception cref="FolderException">Thrown if a duplicate key violation occurs during the insert operation.</exception>
+        /// <exception cref="ApplicationException">Thrown if the operation fails for any other reason. The exception message includes details about the table
+        /// name and the underlying error.</exception>
+        public override void Add(string tableName, string schemaName, object obj, List<TableColumn> columns, IDBStore store) {
+            try {
                 ParameterCollection parameters = [];
                 StringBuilder sbColumns = new();
                 StringBuilder sbValues = new();
                 TableColumn? keyColumn = null;
-                string sourceName = DefaultSchemaName;
+                string sourceName = schemaName;
 
-                for (int i = 0; i < columns.Count; i++)
-                {
+                for (int i = 0; i < columns.Count; i++) {
                     TableColumn col = columns[i];
                     if (col.IsPrimary)
                         keyColumn = col;
 
-                    if (col.IsInsertable)
-                    {
+                    if (col.IsInsertable) {
                         //we do not insert columns such as autonumber columns
                         IDataParameter parameter = CreateParameter(obj, col, store);
                         sbColumns.Append(__comma).Append(col.Name);
@@ -532,8 +534,7 @@ namespace CodedThought.Core.Data.MySql
                         parameters.Add(parameter);
                     }
                 }
-                if (!String.IsNullOrEmpty(sourceName))
-                {
+                if (!String.IsNullOrEmpty(sourceName)) {
                     sourceName = $"{sourceName}.{tableName}";
                 }
                 StringBuilder sql = new($"INSERT INTO {sourceName} (");
@@ -548,48 +549,47 @@ namespace CodedThought.Core.Data.MySql
                 // ================================================================
 
                 //Check if we have an identity Column
-                if (store.HasKeyColumn(obj))
-                {
+                if (store.HasKeyColumn(obj)) {
                     // Check if we have an auto numbering/identity column
-                    if (keyColumn.IsIdentity)
-                    {
+                    if (keyColumn.IsIdentity) {
                         sql.Append("SELECT LAST_INSERT_ID(); ");
                         // ExecuteScalar will execute both the INSERT statement and the SELECT statement.
                         int retVal = Convert.ToInt32(ExecuteScalar(sql.ToString(), CommandType.Text, parameters));
                         store.SetPrimaryKey(obj, retVal);
-                    }
-                    else
-                    {
+                    } else {
                         ExecuteNonQuery(sql.ToString(), CommandType.Text, parameters);
                     }
-                }
-                else
-                {
+                } else {
                     ExecuteNonQuery(sql.ToString(), CommandType.Text, parameters);
                 }
 
                 // this is the way to get the CONTEXT_INFO of a SQL connection session
                 // string contextInfo = System.Convert.ToString( this.ExecuteScalar( "SELECT dbo.AUDIT_LOG_GET_USER_NAME() ", System.Data.CommandType.Text, null ) );
             }
-            catch (ApplicationException irEx)
-            {
+            catch (ApplicationException irEx) {
                 RollbackTransaction();
                 // this is not a good method to catch DUPLICATE
-                if (irEx.Message.IndexOf("duplicate key") >= 0)
-                {
+                if (irEx.Message.IndexOf("duplicate key") >= 0) {
                     throw new FolderException(irEx.Message, irEx);
-                }
-                else
-                {
+                } else {
                     throw new ApplicationException("Failed to add record to: " + tableName + "<BR>" + irEx.Message + "<BR>" + irEx.Source, irEx);
                 }
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 RollbackTransaction();
                 throw new ApplicationException("Failed to add record to: " + tableName + "<BR>" + ex.Message + "<BR>" + ex.Source, ex);
             }
         }
+
+        /// <summary>
+        /// Adds data to the database
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="obj"></param>
+        /// <param name="columns"></param>
+        /// <param name="store"></param>
+        /// <returns></returns>
+        public override void Add(string tableName, object obj, List<TableColumn> columns, IDBStore store) => Add(tableName, DefaultSchemaName, obj, columns, store);
 
         #endregion Add method
 
@@ -1301,6 +1301,7 @@ namespace CodedThought.Core.Data.MySql
                 throw new ArgumentException($"MySQL data type, {mySqlType}, not supported or recognized.");
             }
         }
+
 
         #endregion Database Specific
 
