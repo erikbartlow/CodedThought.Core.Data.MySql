@@ -519,7 +519,6 @@ namespace CodedThought.Core.Data.MySql
                 StringBuilder sbColumns = new();
                 StringBuilder sbValues = new();
                 TableColumn? keyColumn = null;
-                string sourceName = schemaName;
 
                 for (int i = 0; i < columns.Count; i++) {
                     TableColumn col = columns[i];
@@ -534,10 +533,8 @@ namespace CodedThought.Core.Data.MySql
                         parameters.Add(parameter);
                     }
                 }
-                if (!String.IsNullOrEmpty(sourceName)) {
-                    sourceName = $"{sourceName}.{tableName}";
-                }
-                StringBuilder sql = new($"INSERT INTO {sourceName} (");
+
+                StringBuilder sql = new($"INSERT INTO {GetTableName(schemaName, tableName)} (");
                 sql.Append(sbColumns.Remove(0, 2));
                 sql.Append(") VALUES (");
                 sql.Append(sbValues.Remove(0, 2));
@@ -589,7 +586,7 @@ namespace CodedThought.Core.Data.MySql
         /// <param name="columns"></param>
         /// <param name="store"></param>
         /// <returns></returns>
-        public override void Add(string tableName, object obj, List<TableColumn> columns, IDBStore store) => Add(tableName, DefaultSchemaName, obj, columns, store);
+        public override void Add(string tableName, object obj, List<TableColumn> columns, IDBStore store) => Add(tableName, GetSchemaName(), obj, columns, store);
 
         #endregion Add method
 
@@ -800,7 +797,7 @@ namespace CodedThought.Core.Data.MySql
                 List<TableColumn> tableDefinition = [];
                 // Remove any brackets since the definitiion query doesn't support that.
                 string tName = tableName.Replace("[", "").Replace("]", "");
-                string schemaName = DefaultSchemaName.Replace("[", "").Replace("]", "");
+                string schemaName = GetSchemaName().Replace("[", "").Replace("]", "");
                 if (tName.Split(".".ToCharArray()).Length > 1)
                 {
                     // The schema name appears to have been passed along with the table name. So parse them out and use them instead of the default values.
@@ -1195,6 +1192,9 @@ namespace CodedThought.Core.Data.MySql
             }
             else
             {
+                if(!string.IsNullOrEmpty(GetSchemaName())) {
+                    return $"{GetSchemaName()}.{tableName}";
+                }
                 return tableName;
             }
         }
