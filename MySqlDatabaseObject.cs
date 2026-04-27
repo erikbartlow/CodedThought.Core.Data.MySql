@@ -1,6 +1,10 @@
+using System.Data;
+using System.Data.Common;
+using System.Text;
+
 using CodedThought.Core.Data.Interfaces;
 using CodedThought.Core.Exceptions;
-using System.Data;
+
 using MySqlConnector;
 
 namespace CodedThought.Core.Data.MySql {
@@ -27,6 +31,11 @@ namespace CodedThought.Core.Data.MySql {
         /// </summary>
         public override void Commit() => throw new NotImplementedException();
 
+        /// <summary>
+        /// Returns the active connection. If the stack has a connection then it is returned.
+        /// connection is created.
+        /// </summary>
+        public override IDbConnection Connection => _connection == null ? (MySqlConnection) base.Connection : (MySqlConnection) _connection;
 
         /// <summary>
         /// Opens an Oracle Connection

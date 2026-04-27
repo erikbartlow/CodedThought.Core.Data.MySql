@@ -12,9 +12,9 @@
 	<Authors>Erik Bartlow</Authors>
 	<Company>CodedThought</Company>
 	<Description>The CodedThought.Core.Data.MySql package is a custom database provider for use with MySql Server.</Description>
-	<PackageProjectUrl>https://github.com/erikbartlow/CodedThought.Core</PackageProjectUrl>
+	<PackageProjectUrl>https://www.nuget.org/packages/CodedThought.Core.Data.MySql/</PackageProjectUrl>
 	<RepositoryType>git</RepositoryType>
-	<RepositoryUrl>https://github.com/erikbartlow/CodedThought.Core</RepositoryUrl>
+	<RepositoryUrl>https://github.com/erikbartlow/CodedThought.Core.Data.MySql</RepositoryUrl>
 	<IncludeContentInPack>true</IncludeContentInPack>
 	<PublishRepositoryUrl>true</PublishRepositoryUrl>
 	<PackageLicenseFile>LICENSE</PackageLicenseFile>
